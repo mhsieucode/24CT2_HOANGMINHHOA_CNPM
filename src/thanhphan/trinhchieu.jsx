@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function TrinhChieu() {
   const [slide, setSlide] = useState(0);
@@ -9,12 +9,23 @@ function TrinhChieu() {
     "/image/poster3.jpg",
   ];
 
+  // Tự động chuyển slide
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlide((prevSlide) => (prevSlide + 1) % banners.length);
+    }, 750); // 3000 = 3 giây
+
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  // Nút Next
   const nextSlide = () => {
-    setSlide((slide + 1) % banners.length);
+    setSlide((prevSlide) => (prevSlide + 1) % banners.length);
   };
 
+  // Nút Previous
   const prevSlide = () => {
-    setSlide((slide - 1 + banners.length) % banners.length);
+    setSlide((prevSlide) => (prevSlide - 1 + banners.length) % banners.length);
   };
 
   return (

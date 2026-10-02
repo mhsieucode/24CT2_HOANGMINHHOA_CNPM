@@ -1,296 +1,411 @@
+import { useState } from "react";
+
 function SanPham() {
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+
+  // =========================
+  // MỞ CHI TIẾT SẢN PHẨM
+  // =========================
+  const openDetail = (product) => {
+    setSelectedProduct(product);
+    setQuantity(1);
+  };
+
+  // =========================
+  // ĐÓNG CHI TIẾT
+  // =========================
+  const closeDetail = () => {
+    setSelectedProduct(null);
+  };
+
+  // =========================
+  // TĂNG GIẢM SỐ LƯỢNG
+  // =========================
+  const increaseQuantity = () => {
+    setQuantity(quantity + 1);
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };
+
+  // =========================
+  // HIỂN THỊ 1 SẢN PHẨM
+  // =========================
+  const ProductCard = ({
+    image,
+    name,
+    price,
+    category,
+    number,
+    hot = false,
+  }) => {
+    return (
+      <div className="product-card">
+        <div className="product-image">
+          <img src={image} alt={name} />
+
+          <span className="product-number">{number}</span>
+
+          {hot && <span className="sale">HOT</span>}
+        </div>
+
+        <div className="product-info">
+          <small>{category}</small>
+
+          <h3>{name}</h3>
+
+          <p>{price}</p>
+
+          <button
+            onClick={() =>
+              openDetail({
+                image,
+                name,
+                price,
+                category,
+              })
+            }
+          >
+            CHI TIẾT →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <section className="products" id="sanpham">
-      {/* ================= SẢN PHẨM NỔI BẬT ================= */}
-      <h2>
-        Sản phẩm nổi bật<span>🔥</span>
-      </h2>
+    <>
+      <section className="products" id="sanpham">
+        {/* ================================================= */}
+        {/* SẢN PHẨM NỔI BẬT */}
+        {/* ================================================= */}
 
-      <div className="product-grid">
-        {/* SẢN PHẨM 1 */}
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/fullface1.jpg" alt="Mũ bảo hiểm" />
+        <div className="section-title">
+          <span>SẢN PHẨM MOTO</span>
+          <h2>Sản phẩm nổi bật 🔥</h2>
+          <p>Những sản phẩm được yêu thích nhất dành cho Biker</p>
+        </div>
+
+        <div className="product-grid">
+          <ProductCard
+            image="/image/fullface1.jpg"
+            name="FULLFACE 1"
+            price="750.000đ"
+            category="MŨ BẢO HIỂM"
+            number="01"
+            hot={true}
+          />
+
+          <ProductCard
+            image="/image/chan3.jpg"
+            name="GIÁP BẢO HỘ CHÂN"
+            price="1.150.000đ"
+            category="GIÁP BẢO HỘ"
+            number="02"
+          />
+
+          <ProductCard
+            image="/image/tay2.jpg"
+            name="GĂNG TAY BẢO HỘ"
+            price="1.000.000đ"
+            category="PHỤ KIỆN MOTO"
+            number="03"
+          />
+
+          <ProductCard
+            image="/image/ao1.jpg"
+            name="JACKET"
+            price="1.500.000đ"
+            category="ÁO MOTO"
+            number="04"
+          />
+        </div>
+
+        {/* ================================================= */}
+        {/* NÓN BẢO HIỂM */}
+        {/* ================================================= */}
+
+        <div className="category-product">
+          <div className="product-banner">
+            <img src="/image/poster20.jpg" alt="Nón bảo hiểm" />
+
+            <div className="banner-content">
+              <span>COLLECTION 01</span>
+              <h2>NÓN BẢO HIỂM</h2>
+              <p>Bảo vệ an toàn - Phong cách mạnh mẽ</p>
+            </div>
           </div>
 
-          <div className="product-info">
-            <h3>FULLFACE1</h3>
-            <p>750.000đ</p>
-            <button>CHI TIẾT</button>
+          <div className="category-heading"></div>
+
+          <div className="product-grid">
+            <ProductCard
+              image="/image/fullface1.jpg"
+              name="FULLFACE 1"
+              price="750.000đ"
+              category="FULLFACE"
+              number="01"
+            />
+
+            <ProductCard
+              image="/image/fullface2.jpg"
+              name="FULLFACE 2"
+              price="850.000đ"
+              category="FULLFACE"
+              number="02"
+            />
+
+            <ProductCard
+              image="/image/fullface3.jpg"
+              name="FULLFACE 3"
+              price="850.000đ"
+              category="FULLFACE"
+              number="03"
+            />
+
+            <ProductCard
+              image="/image/fullface4.jpg"
+              name="FULLFACE 4"
+              price="850.000đ"
+              category="FULLFACE"
+              number="04"
+            />
           </div>
         </div>
 
-        {/* SẢN PHẨM 2 */}
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/chan3.jpg" alt="Giáp bảo hộ chân" />
+        {/* ================================================= */}
+        {/* ÁO MÔ TÔ */}
+        {/* ================================================= */}
+
+        <div className="category-product">
+          <div className="product-banner">
+            <img src="/image/poster18.jpg" alt="Áo mô tô" />
+
+            <div className="banner-content">
+              <span>COLLECTION 02</span>
+              <h2>ÁO MÔ TÔ</h2>
+              <p>Phong cách mạnh mẽ cho mọi hành trình</p>
+            </div>
           </div>
 
-          <div className="product-info">
-            <h3>GIÁP BẢO HỘ CHÂN</h3>
-            <p>1.150.000đ</p>
-            <button>CHI TIẾT</button>
+          <div className="category-heading"></div>
+
+          <div className="product-grid">
+            <ProductCard
+              image="/image/ao4.jpg"
+              name="JACKET 1"
+              price="1.500.000đ"
+              category="JACKET"
+              number="01"
+            />
+
+            <ProductCard
+              image="/image/ao6.jpg"
+              name="JACKET 2"
+              price="1.500.000đ"
+              category="JACKET"
+              number="02"
+            />
+
+            <ProductCard
+              image="/image/ao7.jpg"
+              name="JACKET 3"
+              price="1.500.000đ"
+              category="JACKET"
+              number="03"
+            />
+
+            <ProductCard
+              image="/image/ao5.jpg"
+              name="JACKET 4"
+              price="1.700.000đ"
+              category="JACKET"
+              number="04"
+            />
           </div>
         </div>
 
-        {/* SẢN PHẨM 3 */}
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/tay2.jpg" alt="Găng tay bảo hộ" />
+        {/* ================================================= */}
+        {/* GIÁP BẢO HỘ */}
+        {/* ================================================= */}
+
+        <div className="category-product">
+          <div className="product-banner">
+            <img src="/image/poster21.jpg" alt="Giáp bảo hộ" />
+
+            <div className="banner-content">
+              <span>COLLECTION 03</span>
+              <h2>GIÁP BẢO HỘ</h2>
+              <p>Bảo vệ tối đa cho những chuyến đi</p>
+            </div>
           </div>
 
-          <div className="product-info">
-            <h3>GĂNG TAY BẢO HỘ</h3>
-            <p>1.000.000đ</p>
-            <button>CHI TIẾT</button>
+          <div className="category-heading"></div>
+
+          <div className="product-grid">
+            <ProductCard
+              image="/image/chan3.jpg"
+              name="GIÁP BẢO HỘ CHÂN 1"
+              price="1.150.000đ"
+              category="GIÁP BẢO HỘ"
+              number="01"
+            />
+
+            <ProductCard
+              image="/image/chan2.jpg"
+              name="GIÁP BẢO HỘ CHÂN 2"
+              price="1.150.000đ"
+              category="GIÁP BẢO HỘ"
+              number="02"
+            />
+
+            <ProductCard
+              image="/image/chan7.jpg"
+              name="GIÁP BẢO HỘ CHÂN 3"
+              price="1.150.000đ"
+              category="GIÁP BẢO HỘ"
+              number="03"
+            />
+
+            <ProductCard
+              image="/image/chan4.jpg"
+              name="GIÁP BẢO HỘ CHÂN 4"
+              price="1.300.000đ"
+              category="GIÁP BẢO HỘ"
+              number="04"
+            />
           </div>
         </div>
 
-        {/* SẢN PHẨM 4 */}
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/ao1.jpg" alt="Áo khoác mô tô" />
+        {/* ================================================= */}
+        {/* PHỤ KIỆN */}
+        {/* ================================================= */}
+
+        <div className="category-product">
+          <div className="product-banner">
+            <img src="/image/poster21.png" alt="Phụ kiện Moto" />
+
+            <div className="banner-content">
+              <span>COLLECTION 04</span>
+              <h2>PHỤ KIỆN MOTO</h2>
+              <p>Hoàn thiện phong cách cho chiếc Moto của bạn</p>
+            </div>
           </div>
 
-          <div className="product-info">
-            <h3>JACKET</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
+          <div className="category-heading"></div>
+
+          <div className="product-grid">
+            <ProductCard
+              image="/image/phukien3.jpg"
+              name="BÁNH 1"
+              price="1.500.000đ"
+              category="PHỤ KIỆN"
+              number="01"
+            />
+
+            <ProductCard
+              image="/image/phukien4.jpg"
+              name="BÁNH 2"
+              price="1.500.000đ"
+              category="PHỤ KIỆN"
+              number="02"
+            />
+
+            <ProductCard
+              image="/image/phukien5.jpg"
+              name="BÁNH 3"
+              price="1.500.000đ"
+              category="PHỤ KIỆN"
+              number="03"
+            />
+
+            <ProductCard
+              image="/image/phukien6.jpg"
+              name="BÁNH 4"
+              price="1.700.000đ"
+              category="PHỤ KIỆN"
+              number="04"
+            />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ================================================= */}
-      {/* ================== SẢN PHẨM MỚI ================= */}
+      {/* POPUP CHI TIẾT SẢN PHẨM */}
       {/* ================================================= */}
 
-      {/* BANNER NÓN */}
-      <div className="product-banner">
-        <img src="/image/poster11.jpg" alt="Nón bảo hiểm" />
-      </div>
+      {selectedProduct && (
+        <div className="product-detail-overlay" onClick={closeDetail}>
+          <div
+            className="product-detail-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* NÚT ĐÓNG */}
+            <button className="detail-close" onClick={closeDetail}>
+              ×
+            </button>
 
-      <h2>NÓN BẢO HIỂM</h2>
+            {/* ẢNH SẢN PHẨM */}
+            <div className="detail-product-image">
+              <img src={selectedProduct.image} alt={selectedProduct.name} />
+            </div>
 
-      <div className="product-grid">
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/fullface1.jpg" alt="Fullface 1" />
-          </div>
+            {/* THÔNG TIN */}
+            <div className="detail-product-info">
+              <span className="detail-category">
+                {selectedProduct.category}
+              </span>
 
-          <div className="product-info">
-            <h3>FULLFACE 1</h3>
-            <p>750.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
+              <h2>{selectedProduct.name}</h2>
 
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/fullface2.jpg" alt="Fullface 2" />
-          </div>
+              <div className="detail-price">{selectedProduct.price}</div>
 
-          <div className="product-info">
-            <h3>FULLFACE 2</h3>
-            <p>850.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
+              <div className="detail-line"></div>
 
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/fullface3.jpg" alt="Fullface 2" />
-          </div>
+              <p className="detail-description">
+                Sản phẩm chất lượng cao dành cho Biker, thiết kế mạnh mẽ, chắc
+                chắn và phù hợp cho những chuyến đi đường dài.
+              </p>
 
-          <div className="product-info">
-            <h3>FULLFACE 3</h3>
-            <p>850.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/fullface4.jpg" alt="Fullface 2" />
-          </div>
+              <div className="detail-spec">
+                <p>
+                  <strong>Chất liệu:</strong> Cao cấp
+                </p>
 
-          <div className="product-info">
-            <h3>FULLFACE 4</h3>
-            <p>850.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-      </div>
+                <p>
+                  <strong>Kích thước:</strong> M / L / XL
+                </p>
 
-      {/* BANNER ÁO */}
-      <div className="product-banner">
-        <img src="/image/poster7.jpg" alt="Áo mô tô" />
-      </div>
+                <p>
+                  <strong>Tình trạng:</strong> Còn hàng
+                </p>
+              </div>
 
-      <h2>ÁO MÔ TÔ</h2>
+              {/* SỐ LƯỢNG */}
+              <div className="detail-quantity">
+                <span>Số lượng</span>
 
-      <div className="product-grid">
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/ao4.jpg" alt="Jacket" />
-          </div>
+                <div className="quantity-box">
+                  <button onClick={decreaseQuantity}>−</button>
 
-          <div className="product-info">
-            <h3>JACKET1</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
+                  <span>{quantity}</span>
+
+                  <button onClick={increaseQuantity}>+</button>
+                </div>
+              </div>
+
+              {/* NÚT */}
+              <button className="detail-cart-button">THÊM VÀO GIỎ</button>
+            </div>
           </div>
         </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/ao6.jpg" alt="Jacket" />
-          </div>
-
-          <div className="product-info">
-            <h3>JACKET2</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/ao7.jpg" alt="Jacket" />
-          </div>
-
-          <div className="product-info">
-            <h3>JACKET3</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/ao5.jpg" alt="Áo moto" />
-          </div>
-
-          <div className="product-info">
-            <h3>JACKET4</h3>
-            <p>1.700.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-      </div>
-
-      {/* BANNER GIÁP */}
-      <div className="product-banner">
-        <img src="/image/poster10.jpg" alt="Giáp bảo hộ" />
-      </div>
-
-      <h2>GIÁP BẢO HỘ</h2>
-
-      <div className="product-grid">
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/chan3.jpg" alt="Giáp bảo hộ chân" />
-          </div>
-
-          <div className="product-info">
-            <h3>GIÁP BẢO HỘ CHÂN1</h3>
-            <p>1.150.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/chan2.jpg" alt="Giáp bảo hộ chân" />
-          </div>
-
-          <div className="product-info">
-            <h3>GIÁP BẢO HỘ CHÂN2</h3>
-            <p>1.150.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/chan7.jpg" alt="Giáp bảo hộ chân" />
-          </div>
-
-          <div className="product-info">
-            <h3>GIÁP BẢO HỘ CHÂN3</h3>
-            <p>1.150.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/chan4.jpg" alt="Giáp bảo hộ" />
-          </div>
-
-          <div className="product-info">
-            <h3>GIÁP BẢO HỘ CHÂN4</h3>
-            <p>1.300.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-      </div>
-
-      {/* BANNER ÁO */}
-      <div className="product-banner">
-        <img src="/image/poster13.jpg" alt="Áo mô tô" />
-      </div>
-
-      <h2>PHỤ KIỆN </h2>
-
-      <div className="product-grid">
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/phukien3.jpg" alt="Jacket" />
-          </div>
-
-          <div className="product-info">
-            <h3>BÁNH1</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/phukien4.jpg" alt="Jacket" />
-          </div>
-
-          <div className="product-info">
-            <h3>BÁNH2</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/phukien5.jpg" alt="Jacket" />
-          </div>
-
-          <div className="product-info">
-            <h3>BÁNH3</h3>
-            <p>1.500.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">
-            <img src="/image/phukien6.jpg" alt="Áo moto" />
-          </div>
-
-          <div className="product-info">
-            <h3>BÁNH4</h3>
-            <p>1.700.000đ</p>
-            <button>CHI TIẾT</button>
-          </div>
-        </div>
-      </div>
-    </section>
+      )}
+    </>
   );
 }
+
 export default SanPham;

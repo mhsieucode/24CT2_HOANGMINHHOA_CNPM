@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./App.css";
 
 import DauTrang from "./thanhphan/dautrang";
@@ -7,23 +8,66 @@ import SanPham from "./thanhphan/sanpham";
 import GioiThieu from "./thanhphan/gioithieu";
 import ChanTrang from "./thanhphan/chantrang";
 import DanhGia from "./thanhphan/danhgia";
+import Poster from "./thanhphan/poster";
+
+import DangNhap from "./thanhphan/dangnhap";
+import DangKy from "./thanhphan/dangky";
 
 function App() {
+  const [hienDangNhap, setHienDangNhap] = useState(false);
+  const [hienDangKy, setHienDangKy] = useState(false);
+
   return (
-    <div className="page">
-      <DauTrang />
+    <div className="web-layout">
+      {/* POSTER */}
+      <Poster />
 
-      <TrinhChieu />
+      <div className="page">
+        {/* HEADER */}
+        <DauTrang />
 
-      <DanhMuc />
+        {/* NÚT ĐĂNG NHẬP - ĐĂNG KÝ */}
+        <div className="auth-buttons">
+          <button onClick={() => setHienDangNhap(true)}>ĐĂNG NHẬP</button>
 
-      <SanPham />
+          <button onClick={() => setHienDangKy(true)}>ĐĂNG KÝ</button>
+        </div>
 
-      <GioiThieu />
+        {/* NỘI DUNG WEBSITE */}
+        <TrinhChieu />
 
-      <DanhGia />
+        <DanhMuc />
 
-      <ChanTrang />
+        <SanPham />
+
+        <GioiThieu />
+
+        <DanhGia />
+
+        <ChanTrang />
+      </div>
+
+      {/* ĐĂNG NHẬP */}
+      {hienDangNhap && (
+        <DangNhap
+          dong={() => setHienDangNhap(false)}
+          sangDangKy={() => {
+            setHienDangNhap(false);
+            setHienDangKy(true);
+          }}
+        />
+      )}
+
+      {/* ĐĂNG KÝ */}
+      {hienDangKy && (
+        <DangKy
+          dong={() => setHienDangKy(false)}
+          sangDangNhap={() => {
+            setHienDangKy(false);
+            setHienDangNhap(true);
+          }}
+        />
+      )}
     </div>
   );
 }

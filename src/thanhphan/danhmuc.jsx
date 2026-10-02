@@ -1,44 +1,42 @@
 function DanhMuc() {
   return (
     <section className="category">
-      <h2>
-        Danh mục sản phẩm Moto<span>🏍️</span>
-      </h2>
+      <div className="category-header">
+        <p>KHÁM PHÁ NGAY</p>
+        <h2>Danh mục sản phẩm Moto 🏍️</h2>
+      </div>
 
       <div className="category-list">
-        {/* NÓN */}
-        <div className="category-box">
-          <div className="category-image">
+        <div className="category-item">
+          <div className="category-circle">
             <img src="/image/mu1.jpg" alt="Nón bảo hiểm" />
           </div>
-
-          <p>Nón bảo hiểm</p>
+          <h3>Nón bảo hiểm</h3>
+          <span>Xem sản phẩm →</span>
         </div>
 
-        {/* ÁO */}
-        <div className="category-box">
-          <div className="category-image">
+        <div className="category-item">
+          <div className="category-circle">
             <img src="/image/ao0.jpg" alt="Áo mô tô" />
           </div>
-          <p>Áo mô tô</p>
+          <h3>Áo mô tô</h3>
+          <span>Xem sản phẩm →</span>
         </div>
 
-        {/* GIÁP */}
-        <div className="category-box">
-          <div className="category-image">
+        <div className="category-item">
+          <div className="category-circle">
             <img src="/image/chan4.jpg" alt="Giáp bảo hộ" />
           </div>
-
-          <p>Giáp bảo hộ</p>
+          <h3>Giáp bảo hộ</h3>
+          <span>Xem sản phẩm →</span>
         </div>
 
-        {/* PHỤ KIỆN */}
-        <div className="category-box">
-          <div className="category-image">
+        <div className="category-item">
+          <div className="category-circle">
             <img src="/image/phukien2.jpg" alt="Phụ kiện" />
           </div>
-
-          <p>Phụ kiện</p>
+          <h3>Phụ kiện</h3>
+          <span>Xem sản phẩm →</span>
         </div>
       </div>
     </section>
