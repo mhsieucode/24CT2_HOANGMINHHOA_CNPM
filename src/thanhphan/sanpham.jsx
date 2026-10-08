@@ -333,11 +333,9 @@ function SanPham() {
           </div>
         </div>
       </section>
-
       {/* ================================================= */}
       {/* POPUP CHI TIẾT SẢN PHẨM */}
       {/* ================================================= */}
-
       {selectedProduct && (
         <div className="product-detail-overlay" onClick={closeDetail}>
           <div
@@ -349,43 +347,76 @@ function SanPham() {
               ×
             </button>
 
-            {/* ẢNH SẢN PHẨM */}
-            <div className="detail-product-image">
-              <img src={selectedProduct.image} alt={selectedProduct.name} />
+            {/* ========================= */}
+            {/* BÊN TRÁI - HÌNH SẢN PHẨM */}
+            {/* ========================= */}
+            <div className="detail-product-left">
+              <div className="detail-product-image">
+                <img src={selectedProduct.image} alt={selectedProduct.name} />
+              </div>
+
+              {/* CHẤM TRANG TRÍ */}
+              <div className="detail-dots">
+                <span className="active"></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </div>
 
-            {/* THÔNG TIN */}
+            {/* ========================= */}
+            {/* BÊN PHẢI - THÔNG TIN */}
+            {/* ========================= */}
             <div className="detail-product-info">
+              {/* TRẠNG THÁI */}
+              <span className="detail-status">● CÒN HÀNG</span>
+
+              {/* DANH MỤC */}
               <span className="detail-category">
                 {selectedProduct.category}
               </span>
 
+              {/* TÊN */}
               <h2>{selectedProduct.name}</h2>
 
-              <div className="detail-price">{selectedProduct.price}</div>
-
-              <div className="detail-line"></div>
-
+              {/* MÔ TẢ */}
               <p className="detail-description">
                 Sản phẩm chất lượng cao dành cho Biker, thiết kế mạnh mẽ, chắc
                 chắn và phù hợp cho những chuyến đi đường dài.
               </p>
 
+              {/* GIÁ */}
+              <div className="detail-price">{selectedProduct.price}</div>
+
+              {/* ĐƯỜNG KẺ */}
+              <div className="detail-line"></div>
+
+              {/* THÔNG SỐ */}
               <div className="detail-spec">
-                <p>
-                  <strong>Chất liệu:</strong> Cao cấp
-                </p>
+                <div>
+                  <span>Hãng</span>
+                  <strong>MOTO SHOP</strong>
+                </div>
 
-                <p>
-                  <strong>Kích thước:</strong> M / L / XL
-                </p>
+                <div>
+                  <span>Dòng sản phẩm</span>
+                  <strong>{selectedProduct.category}</strong>
+                </div>
 
-                <p>
-                  <strong>Tình trạng:</strong> Còn hàng
-                </p>
+                <div>
+                  <span>Chất liệu</span>
+                  <strong>Cao cấp</strong>
+                </div>
+
+                <div>
+                  <span>Tình trạng</span>
+                  <strong>Còn hàng</strong>
+                </div>
               </div>
 
+              {/* ========================= */}
               {/* SỐ LƯỢNG */}
+              {/* ========================= */}
               <div className="detail-quantity">
                 <span>Số lượng</span>
 
@@ -398,8 +429,14 @@ function SanPham() {
                 </div>
               </div>
 
-              {/* NÚT */}
-              <button className="detail-cart-button">THÊM VÀO GIỎ</button>
+              {/* ========================= */}
+              {/* BUTTON */}
+              {/* ========================= */}
+              <div className="detail-buttons">
+                <button className="detail-cart-button">🛒 THÊM VÀO GIỎ</button>
+
+                <button className="detail-buy-button">MUA NGAY</button>
+              </div>
             </div>
           </div>
         </div>

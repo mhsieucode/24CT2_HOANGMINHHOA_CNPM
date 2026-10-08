@@ -78,13 +78,31 @@ body {
 
 /* ================= MÀN HÌNH NHỎ ================= */
 
-@media (max-width: 1200px) {
-  .side-poster {
-    display: none;
+@media (max-width: 1000px) {
+  .navbar {
+    padding: 0 12px;
   }
 
-  .page {
-    width: 100%;
+  .logo {
+    width: 160px;
+  }
+
+  .logo span {
+    font-size: 17px;
+  }
+
+  .nav-menu {
+    gap: 10px;
+  }
+
+  .nav-menu a {
+    font-size: 11px;
+  }
+
+  .login-btn,
+  .register-btn {
+    padding: 0 9px;
+    font-size: 10px;
   }
 }
 
@@ -131,30 +149,97 @@ body {
 
 /* MENU */
 
-nav {
+/* =========================
+   NAVBAR
+========================= */
+
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+  width: 100%;
+  min-height: 85px;
+  background: #050505;
+
   display: flex;
   align-items: center;
-  gap: 30px;
+
+  padding: 0 20px;
+  box-sizing: border-box;
+
+  overflow: hidden;
 }
 
-nav a {
+/* =========================
+   LOGO
+========================= */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  flex-shrink: 0;
+  width: 190px;
+}
+
+.logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.logo span {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* =========================
+   MENU
+========================= */
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 16px;
+
+  flex: 1;
+  min-width: 0;
+}
+
+/* MENU LINK */
+
+.nav-menu a {
   position: relative;
 
+  color: white;
   text-decoration: none;
-  color: #fff;
 
+  font-size: 13px;
   font-weight: 500;
+
+  white-space: nowrap;
 
   transition: 0.3s;
 }
 
-nav a::after {
+.nav-menu a:hover {
+  color: #a855f7;
+}
+
+.nav-menu a::after {
   content: "";
 
   position: absolute;
-
   left: 0;
-  bottom: -8px;
+  bottom: -6px;
 
   width: 0;
   height: 2px;
@@ -164,14 +249,59 @@ nav a::after {
   transition: 0.3s;
 }
 
-nav a:hover {
-  color: #a855f7;
-}
-
-nav a:hover::after {
+.nav-menu a:hover::after {
   width: 100%;
 }
+/* ĐĂNG NHẬP / ĐĂNG KÝ */
+.auth-buttons {
+  display: flex;
+  align-items: center;
 
+  gap: 8px;
+  margin-left: 5px;
+
+  flex-shrink: 0;
+}
+
+.login-btn,
+.register-btn {
+  height: 36px;
+
+  padding: 0 13px;
+
+  border-radius: 6px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.login-btn {
+  background: transparent;
+  color: white;
+
+  border: 1px solid #8b5cf6;
+}
+
+.login-btn:hover {
+  background: #8b5cf6;
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+
+  color: white;
+  border: none;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+}
 /* GIỎ HÀNG */
 
 .cart {
@@ -901,376 +1031,456 @@ nav a:hover::after {
    POPUP CHI TIẾT SẢN PHẨM
    ========================================================= */
 
-/* Lớp nền tối phía sau */
+/* =========================================
+   POPUP CHI TIẾT SẢN PHẨM
+========================================= */
+
 .product-detail-overlay {
   position: fixed;
   inset: 0;
 
-  width: 100%;
-  height: 100vh;
-
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.78);
 
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 
-  padding: 20px;
+  z-index: 9999;
 
-  z-index: 99999;
-
-  animation: detailFadeIn 0.25s ease;
+  padding: 30px;
 }
 
-/* Hiệu ứng xuất hiện */
-@keyframes detailFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-/* =========================================================
+/* =========================================
    KHUNG CHI TIẾT
-   ========================================================= */
+========================================= */
 
 .product-detail-modal {
   position: relative;
 
-  width: 900px;
-  max-width: 95%;
+  width: min(1000px, 95vw);
+  min-height: 560px;
 
-  min-height: 500px;
+  background: #111;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 22px;
 
   display: grid;
   grid-template-columns: 1fr 1fr;
 
-  background: #111;
-
-  border: 1px solid #333;
-
-  border-radius: 15px;
-
   overflow: hidden;
 
-  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
-
-  animation: detailZoom 0.3s ease;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8);
 }
 
-/* Hiệu ứng phóng to */
-@keyframes detailZoom {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* =========================================================
-   NÚT ĐÓNG X
-   ========================================================= */
+/* =========================================
+   NÚT ĐÓNG
+========================================= */
 
 .detail-close {
   position: absolute;
 
-  top: 15px;
-  right: 15px;
+  top: 18px;
+  right: 20px;
 
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
 
-  border: 1px solid #555;
-
+  border: none;
   border-radius: 50%;
 
-  background: #111;
+  background: rgba(255, 255, 255, 0.08);
 
   color: white;
 
-  font-size: 28px;
-
-  line-height: 1;
+  font-size: 26px;
 
   cursor: pointer;
 
   z-index: 10;
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
   transition: 0.3s;
 }
 
 .detail-close:hover {
-  background: #8b2be2;
-
-  border-color: #8b2be2;
+  background: #7c3aed;
 
   transform: rotate(90deg);
 }
 
-/* =========================================================
-   ẢNH SẢN PHẨM
-   ========================================================= */
+/* =========================================
+   BÊN TRÁI
+========================================= */
 
-.detail-product-image {
-  min-height: 500px;
-
+.detail-product-left {
   padding: 45px;
 
-  background: #080808;
-
   display: flex;
+  flex-direction: column;
 
   justify-content: center;
-
   align-items: center;
+
+  background: radial-gradient(
+    circle at center,
+    #242424 0%,
+    #151515 45%,
+    #0c0c0c 100%
+  );
+}
+
+/* =========================================
+   ẢNH SẢN PHẨM
+========================================= */
+
+.detail-product-image {
+  width: 100%;
+  height: 390px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-product-image img {
   width: 100%;
-
-  max-width: 400px;
-
-  max-height: 400px;
+  height: 100%;
 
   object-fit: contain;
 
-  display: block;
+  transition: 0.4s;
 }
 
-/* =========================================================
-   THÔNG TIN SẢN PHẨM
-   ========================================================= */
+.detail-product-image img:hover {
+  transform: scale(1.06);
+}
 
-.detail-product-info {
-  padding: 60px 45px 40px;
+/* =========================================
+   DẤU CHẤM
+========================================= */
 
+.detail-dots {
   display: flex;
 
+  gap: 10px;
+
+  margin-top: 15px;
+}
+
+.detail-dots span {
+  width: 12px;
+  height: 12px;
+
+  border-radius: 50%;
+
+  background: #777;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.detail-dots span.active {
+  background: #7c3aed;
+
+  transform: scale(1.15);
+}
+
+/* =========================================
+   BÊN PHẢI
+========================================= */
+
+.detail-product-info {
+  padding: 55px 50px;
+
+  display: flex;
   flex-direction: column;
 
   justify-content: center;
+
+  color: white;
 }
 
-/* Danh mục */
-.detail-category {
-  color: #a855f7;
+/* =========================================
+   CÒN HÀNG
+========================================= */
+
+.detail-status {
+  width: fit-content;
+
+  padding: 6px 12px;
+
+  border-radius: 20px;
+
+  background: rgba(124, 58, 237, 0.15);
+
+  color: #a78bfa;
 
   font-size: 12px;
 
-  font-weight: bold;
+  font-weight: 600;
 
-  letter-spacing: 3px;
-
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-/* Tên */
+/* =========================================
+   CATEGORY
+========================================= */
+
+.detail-category {
+  color: #888;
+
+  font-size: 12px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 2px;
+
+  margin-bottom: 8px;
+}
+
+/* =========================================
+   TÊN SẢN PHẨM
+========================================= */
+
 .detail-product-info h2 {
-  margin: 0 0 15px;
+  margin: 0;
 
-  color: #fff;
+  font-size: 34px;
 
-  font-size: 32px;
+  font-weight: 700;
 
-  font-weight: 800;
+  text-transform: uppercase;
+
+  line-height: 1.2;
 }
 
-/* Giá */
-.detail-price {
-  color: #a855f7;
+/* =========================================
+   MÔ TẢ
+========================================= */
 
-  font-size: 26px;
-
-  font-weight: bold;
-
-  margin-bottom: 20px;
-}
-
-/* Đường kẻ */
-.detail-line {
-  width: 60px;
-
-  height: 2px;
-
-  background: #8b2be2;
-
-  margin-bottom: 20px;
-}
-
-/* Mô tả */
 .detail-description {
   color: #aaa;
 
   font-size: 14px;
 
-  line-height: 1.8;
+  line-height: 1.7;
 
-  margin: 0 0 15px;
+  margin: 18px 0;
 }
 
-/* =========================================================
+/* =========================================
+   GIÁ
+========================================= */
+
+.detail-price {
+  color: #a78bfa;
+
+  font-size: 30px;
+
+  font-weight: 800;
+
+  margin: 5px 0 20px;
+}
+
+/* =========================================
+   ĐƯỜNG KẺ
+========================================= */
+
+.detail-line {
+  width: 100%;
+
+  height: 1px;
+
+  background: rgba(255, 255, 255, 0.12);
+
+  margin-bottom: 20px;
+}
+
+/* =========================================
    THÔNG SỐ
-   ========================================================= */
+========================================= */
 
 .detail-spec {
-  margin-top: 5px;
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 11px;
+
+  margin-bottom: 22px;
 }
 
-.detail-spec p {
-  margin: 8px 0;
+.detail-spec div {
+  display: flex;
 
-  color: #aaa;
+  justify-content: space-between;
 
-  font-size: 14px;
+  gap: 20px;
+
+  font-size: 13px;
+}
+
+.detail-spec span {
+  color: #777;
 }
 
 .detail-spec strong {
-  color: #fff;
+  color: #eee;
+
+  font-weight: 500;
+
+  text-align: right;
 }
 
-/* =========================================================
+/* =========================================
    SỐ LƯỢNG
-   ========================================================= */
+========================================= */
 
 .detail-quantity {
-  margin-top: 20px;
-
   display: flex;
 
   align-items: center;
 
   justify-content: space-between;
 
-  color: white;
+  margin-bottom: 22px;
+}
+
+.detail-quantity > span {
+  color: #aaa;
 
   font-size: 14px;
 }
 
-/* Khung số lượng */
+/* =========================================
+   BOX SỐ LƯỢNG
+========================================= */
+
 .quantity-box {
   display: flex;
 
   align-items: center;
 
-  border: 1px solid #444;
+  border: 1px solid #333;
 
-  border-radius: 5px;
+  border-radius: 8px;
 
   overflow: hidden;
 }
 
-/* Nút + - */
 .quantity-box button {
   width: 38px;
-
-  height: 38px;
+  height: 35px;
 
   border: none;
 
-  background: #181818;
+  background: #1c1c1c;
 
   color: white;
 
-  font-size: 20px;
+  font-size: 18px;
 
   cursor: pointer;
 
-  transition: 0.3s;
+  transition: 0.2s;
 }
 
 .quantity-box button:hover {
-  background: #8b2be2;
+  background: #7c3aed;
 }
 
-/* Số */
 .quantity-box span {
   width: 40px;
 
-  height: 38px;
-
-  display: flex;
-
-  justify-content: center;
-
-  align-items: center;
+  text-align: center;
 
   color: white;
 
-  background: #111;
+  font-size: 14px;
 }
 
-/* =========================================================
-   NÚT THÊM VÀO GIỎ
-   ========================================================= */
+/* =========================================
+   BUTTON
+========================================= */
 
-.detail-cart-button {
-  width: 100%;
+.detail-buttons {
+  display: flex;
 
+  gap: 10px;
+}
+
+.detail-cart-button,
+.detail-buy-button {
   height: 48px;
 
-  margin-top: 25px;
-
-  border: none;
-
-  border-radius: 5px;
-
-  background: #8b2be2;
-
-  color: white;
+  border-radius: 8px;
 
   font-size: 13px;
 
-  font-weight: bold;
-
-  letter-spacing: 1px;
+  font-weight: 700;
 
   cursor: pointer;
 
   transition: 0.3s;
 }
 
+/* THÊM GIỎ */
+
+.detail-cart-button {
+  flex: 1;
+
+  border: 1px solid #7c3aed;
+
+  background: #7c3aed;
+
+  color: white;
+}
+
 .detail-cart-button:hover {
-  background: #a855f7;
+  background: #6d28d9;
 
   transform: translateY(-2px);
 }
 
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
+/* MUA NGAY */
 
-@media (max-width: 768px) {
+.detail-buy-button {
+  flex: 1;
+
+  border: 1px solid #333;
+
+  background: transparent;
+
+  color: white;
+}
+
+.detail-buy-button:hover {
+  background: white;
+
+  color: black;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 800px) {
   .product-detail-modal {
-    width: 95%;
+    grid-template-columns: 1fr;
 
     max-height: 90vh;
 
     overflow-y: auto;
+  }
 
-    grid-template-columns: 1fr;
+  .detail-product-left {
+    padding: 25px;
   }
 
   .detail-product-image {
-    min-height: 280px;
-
-    padding: 30px;
-  }
-
-  .detail-product-image img {
-    max-width: 280px;
-
-    max-height: 280px;
+    height: 280px;
   }
 
   .detail-product-info {
@@ -1278,11 +1488,21 @@ nav a:hover::after {
   }
 
   .detail-product-info h2 {
-    font-size: 25px;
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 500px) {
+  .product-detail-overlay {
+    padding: 10px;
   }
 
-  .detail-price {
-    font-size: 22px;
+  .product-detail-modal {
+    width: 100%;
+  }
+
+  .detail-buttons {
+    flex-direction: column;
   }
 }
 
@@ -2380,305 +2600,143 @@ nav a:hover::after {
   }
 }
 
-/* =========================
-   NÚT ĐĂNG NHẬP - ĐĂNG KÝ
-========================= */
+/* =====================================================
+   ĐĂNG NHẬP - ĐĂNG KÝ TRÊN HEADER
+===================================================== */
 
 .auth-buttons {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   gap: 10px;
-
-  padding: 12px 30px;
-
-  background: #111;
+  margin-left: 10px;
 }
 
 .auth-buttons button {
-  padding: 9px 18px;
+  height: 36px;
+  padding: 0 16px;
 
-  border: 1px solid #8b5cf6;
-  border-radius: 6px;
+  border-radius: 7px;
 
-  background: transparent;
-  color: white;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
 
   cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
+
+  transition: all 0.3s ease;
 }
 
-.auth-buttons button:hover {
+/* ĐĂNG NHẬP */
+
+.auth-buttons button:first-child {
+  color: #fff;
+  background: transparent;
+
+  border: 1px solid #7c3aed;
+}
+
+.auth-buttons button:first-child:hover {
+  color: #fff;
   background: #7c3aed;
+
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+
+  transform: translateY(-1px);
 }
 
-/* =========================
-   LỚP NỀN FORM
-========================= */
+/* ĐĂNG KÝ */
+
+.auth-buttons button:last-child {
+  color: #fff;
+
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+
+  border: 1px solid #8b5cf6;
+
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.auth-buttons button:last-child:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+}
+
+/* =====================================================
+   NỀN POPUP
+===================================================== */
 
 .auth-overlay {
-  position: fixed !important;
+  position: fixed;
 
-  top: 0 !important;
-  left: 0 !important;
+  inset: 0;
 
-  width: 100vw !important;
-  height: 100vh !important;
+  width: 100vw;
+  height: 100vh;
 
-  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-  display: flex !important;
+  padding: 20px;
 
-  justify-content: center !important;
-  align-items: center !important;
+  box-sizing: border-box;
 
-  z-index: 999999 !important;
+  background: rgba(0, 0, 0, 0.82);
+
+  backdrop-filter: blur(7px);
+
+  z-index: 999999;
 }
 
-/* =========================
-   HỘP ĐĂNG NHẬP / ĐĂNG KÝ
-========================= */
+/* =====================================================
+   KHUNG FORM
+===================================================== */
 
 .auth-box {
   position: relative;
 
   width: 400px;
-  max-width: 90%;
+  max-width: 100%;
 
-  padding: 35px;
-
-  background: #111 !important;
-  color: white !important;
-
-  border: 1px solid #8b5cf6;
-  border-radius: 15px;
-
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
-
-  box-sizing: border-box;
-}
-
-/* TIÊU ĐỀ */
-
-.auth-box h2 {
-  margin: 0 0 10px;
-
-  text-align: center;
-
-  color: white;
-
-  font-size: 26px;
-
-  font-style: italic;
-}
-
-/* DÒNG MÔ TẢ */
-
-.auth-box p {
-  margin: 0 0 25px;
-
-  text-align: center;
-
-  color: #aaa;
-
-  font-size: 14px;
-}
-
-/* =========================
-   Ô INPUT
-========================= */
-
-.auth-box input {
-  display: block;
-
-  width: 100%;
-
-  height: 45px;
-
-  padding: 0 13px;
-
-  margin-bottom: 15px;
+  padding: 40px 38px 32px;
 
   box-sizing: border-box;
 
-  background: #1c1c1c !important;
-
-  color: white !important;
-
-  border: 1px solid #444;
-
-  border-radius: 7px;
-
-  outline: none;
-
-  font-size: 14px;
-}
-
-.auth-box input::placeholder {
-  color: #888;
-}
-
-.auth-box input:focus {
-  border-color: #8b5cf6;
-}
-
-/* =========================
-   NÚT SUBMIT
-========================= */
-
-.auth-submit {
-  display: block;
-
-  width: 100%;
-
-  height: 45px;
-
-  margin-top: 5px;
-
-  background: #7c3aed !important;
-
-  color: white !important;
-
-  border: none;
-
-  border-radius: 7px;
-
-  cursor: pointer;
-
-  font-size: 14px;
-
-  font-weight: bold;
-}
-
-.auth-submit:hover {
-  background: #9333ea !important;
-}
-
-/* =========================
-   NÚT X ĐÓNG
-========================= */
-
-.close-auth {
-  position: absolute;
-
-  top: 8px;
-  right: 12px;
-
-  width: 35px;
-  height: 35px;
-
-  padding: 0;
-
-  background: transparent !important;
-
-  color: white !important;
-
-  border: none !important;
-
-  font-size: 28px;
-
-  cursor: pointer;
-}
-
-.close-auth:hover {
-  color: #a78bfa !important;
-}
-
-/* =========================================
-   NÚT ĐĂNG NHẬP - ĐĂNG KÝ
-========================================= */
-
-.auth-buttons {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 30px;
-  background: #111;
-}
-
-.auth-buttons button {
-  padding: 9px 18px;
-  background: transparent;
-  color: white;
-  border: 1px solid #8b5cf6;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.auth-buttons button:hover {
-  background: #8b5cf6;
-}
-
-/* =========================================
-   NỀN FORM
-========================================= */
-
-.auth-overlay {
-  position: fixed !important;
-  inset: 0;
-
-  width: 100%;
-  height: 100%;
-
-  background: rgba(0, 0, 0, 0.82);
-
-  display: flex !important;
-  justify-content: center;
-  align-items: center;
-
-  z-index: 999999 !important;
-}
-
-/* =========================================
-   KHUNG CHUNG
-   ĐĂNG NHẬP + ĐĂNG KÝ
-========================================= */
-
-.auth-box {
-  position: relative;
-
-  width: 390px;
-
-  padding: 35px 35px 30px;
-
-  background: #111;
-
   color: white;
 
-  border: 1px solid #8b5cf6;
+  background: linear-gradient(145deg, #171717, #0c0c0c);
 
-  border-radius: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.55);
 
-  box-sizing: border-box;
+  border-radius: 18px;
 
-  box-shadow: 0 0 25px rgba(139, 92, 246, 0.25), 0 15px 50px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.18), 0 25px 70px rgba(0, 0, 0, 0.85);
 
-  animation: authShow 0.25s ease;
+  animation: authShow 0.3s ease;
 }
 
-/* =========================================
-   HIỆU ỨNG
-========================================= */
+/* =====================================================
+   HIỆU ỨNG FORM
+===================================================== */
 
 @keyframes authShow {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.96);
+
+    transform: translateY(20px) scale(0.96);
   }
 
   to {
     opacity: 1;
+
     transform: translateY(0) scale(1);
   }
 }
 
-/* =========================================
+/* =====================================================
    TIÊU ĐỀ
-========================================= */
+===================================================== */
 
 .auth-box h2 {
   margin: 0;
@@ -2687,151 +2745,180 @@ nav a:hover::after {
 
   color: white;
 
-  font-size: 26px;
+  font-size: 28px;
 
-  font-weight: 700;
+  font-weight: 800;
 
   font-style: italic;
 
   letter-spacing: 1px;
 }
 
-/* =========================================
+/* =====================================================
    DÒNG MÔ TẢ
-========================================= */
+===================================================== */
 
 .auth-box p {
-  margin: 8px 0 25px;
+  margin: 9px 0 27px;
 
   text-align: center;
 
   color: #999;
 
   font-size: 14px;
+
+  line-height: 1.5;
 }
 
-/* =========================================
+/* =====================================================
    INPUT
-========================================= */
+===================================================== */
 
 .auth-box input {
   display: block;
 
   width: 100%;
-  height: 45px;
+  height: 46px;
 
-  padding: 0 14px;
+  padding: 0 15px;
 
   margin-bottom: 14px;
 
   box-sizing: border-box;
 
-  background: #1b1b1b;
-
   color: white;
+
+  background: #191919;
 
   border: 1px solid #333;
 
-  border-radius: 7px;
+  border-radius: 8px;
 
   outline: none;
 
+  font-family: inherit;
+
   font-size: 14px;
 
-  transition: 0.25s;
+  transition: all 0.25s ease;
 }
 
 .auth-box input::placeholder {
-  color: #777;
+  color: #666;
+}
+
+.auth-box input:hover {
+  border-color: #555;
 }
 
 .auth-box input:focus {
   border-color: #8b5cf6;
 
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+  background: #1c1c1c;
+
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1),
+    0 0 15px rgba(139, 92, 246, 0.15);
 }
 
-/* =========================================
-   NÚT SUBMIT
-========================================= */
+/* =====================================================
+   NÚT ĐĂNG NHẬP / ĐĂNG KÝ
+===================================================== */
 
 .auth-submit {
   display: block;
 
   width: 100%;
-  height: 45px;
+  height: 47px;
 
-  margin-top: 6px;
-
-  background: #7c3aed;
+  margin-top: 7px;
 
   color: white;
 
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+
   border: none;
 
-  border-radius: 7px;
+  border-radius: 8px;
+
+  font-family: inherit;
 
   font-size: 14px;
 
-  font-weight: bold;
+  font-weight: 700;
 
   cursor: pointer;
 
-  transition: 0.25s;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.25);
+
+  transition: all 0.25s ease;
 }
 
 .auth-submit:hover {
-  background: #9333ea;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
 
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+
+  box-shadow: 0 9px 25px rgba(124, 58, 237, 0.4);
 }
 
-/* =========================================
-   NÚT ĐÓNG X
-========================================= */
+.auth-submit:active {
+  transform: translateY(0);
+}
+
+/* =====================================================
+   NÚT X
+===================================================== */
 
 .close-auth {
   position: absolute;
 
-  top: 10px;
-  right: 12px;
+  top: 12px;
+  right: 14px;
 
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
 
   padding: 0;
 
-  background: transparent !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  color: #aaa;
+  color: #888;
+
+  background: transparent !important;
 
   border: none !important;
 
-  font-size: 27px;
+  border-radius: 50%;
 
-  line-height: 32px;
+  font-size: 25px;
+
+  line-height: 1;
 
   cursor: pointer;
 
-  transition: 0.2s;
+  transition: all 0.25s ease;
 }
 
 .close-auth:hover {
   color: white;
 
+  background: rgba(255, 255, 255, 0.08) !important;
+
   transform: rotate(90deg);
 }
 
-/* =========================================
+/* =====================================================
    CHUYỂN ĐỔI ĐĂNG NHẬP / ĐĂNG KÝ
-========================================= */
+===================================================== */
 
 .auth-change {
-  margin-top: 20px;
+  margin-top: 21px;
 
   text-align: center;
 
-  color: #888;
+  color: #777;
 
   font-size: 14px;
 }
@@ -2839,15 +2926,45 @@ nav a:hover::after {
 .auth-change span {
   color: #a78bfa;
 
-  font-weight: bold;
+  font-weight: 700;
 
   cursor: pointer;
+
+  transition: 0.2s;
 }
 
 .auth-change span:hover {
   color: white;
 
   text-decoration: underline;
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 700px) {
+  .auth-buttons {
+    gap: 6px;
+  }
+
+  .auth-buttons button {
+    padding: 0 11px;
+
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-box {
+    width: 100%;
+
+    padding: 35px 25px 28px;
+  }
+
+  .auth-box h2 {
+    font-size: 24px;
+  }
 }
 
 /* =========================================
@@ -2863,5 +2980,366 @@ nav a:hover::after {
 
   .auth-box h2 {
     font-size: 23px;
+  }
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 15px 30px;
+}
+
+.auth-buttons button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #111;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-buttons button:hover {
+  opacity: 0.8;
+}
+
+.welcome-user {
+  font-size: 16px;
+  color: #222;
+}
+
+.welcome-user strong {
+  font-weight: 700;
+}
+
+/* =========================
+   ADMIN
+========================= */
+
+.admin-page {
+  min-height: 100vh;
+  background: #050505;
+  color: white;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid #8b5cf6;
+  border-radius: 12px;
+  background: #0d0d0d;
+}
+
+.admin-header h1 {
+  margin: 0 0 8px;
+  color: #a855f7;
+}
+
+.admin-header p {
+  margin: 0;
+  color: #ccc;
+}
+
+.admin-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.admin-card {
+  background: #101010;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  padding: 25px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.admin-card:hover {
+  transform: translateY(-5px);
+  border-color: #a855f7;
+}
+
+.admin-icon {
+  font-size: 45px;
+  margin-bottom: 15px;
+}
+
+.admin-card h2 {
+  font-size: 19px;
+  margin-bottom: 10px;
+}
+
+.admin-card p {
+  color: #aaa;
+  min-height: 50px;
+  line-height: 1.5;
+}
+
+.admin-card button,
+.admin-logout {
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.admin-logout {
+  background: #dc2626;
+}
+
+/* =========================
+   NHÂN VIÊN
+========================= */
+
+.nhanvien-page {
+  min-height: 100vh;
+  background: #050505;
+  color: white;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.nhanvien-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid #a855f7;
+  border-radius: 12px;
+  background: #0d0d0d;
+}
+
+.nhanvien-header h1 {
+  margin: 0 0 8px;
+  color: #a855f7;
+}
+
+.nhanvien-header p {
+  margin: 0;
+  color: #ccc;
+}
+
+.nhanvien-menu {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.nhanvien-card {
+  background: #101010;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  padding: 25px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.nhanvien-card:hover {
+  transform: translateY(-5px);
+  border-color: #a855f7;
+}
+
+.nhanvien-icon {
+  font-size: 45px;
+  margin-bottom: 15px;
+}
+
+.nhanvien-card h2 {
+  font-size: 19px;
+  margin-bottom: 10px;
+}
+
+.nhanvien-card p {
+  color: #aaa;
+  line-height: 1.5;
+  min-height: 50px;
+}
+
+.nhanvien-card button,
+.nhanvien-logout {
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.nhanvien-logout {
+  background: #dc2626;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+  .admin-menu {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nhanvien-menu {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-header,
+  .nhanvien-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .admin-menu {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   ADMIN - QUẢN LÝ USER
+========================= */
+
+.admin-users {
+  margin-top: 30px;
+  background: #101010;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.admin-users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-users-header h2 {
+  margin: 0 0 5px;
+  color: #a855f7;
+}
+
+.admin-users-header p {
+  margin: 0;
+  color: #aaa;
+}
+
+.admin-refresh {
+  background: #272727;
+  color: white;
+  border: 1px solid #555;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.admin-refresh:hover {
+  background: #a855f7;
+}
+
+.admin-loading {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+}
+
+.admin-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  background: #181818;
+  color: #a855f7;
+  padding: 14px 10px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.admin-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #292929;
+  color: #ddd;
+}
+
+.admin-table tr:hover {
+  background: #171717;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.role-customer {
+  background: #1d4ed8;
+  color: white;
+}
+
+.role-staff {
+  background: #d97706;
+  color: white;
+}
+
+.role-admin {
+  background: #7c3aed;
+  color: white;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-actions select {
+  background: #181818;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 5px;
+  padding: 8px;
+}
+
+.delete-user {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.delete-user:hover {
+  background: #ef4444;
+}
+
+@media (max-width: 700px) {
+  .admin-users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
   }
 }

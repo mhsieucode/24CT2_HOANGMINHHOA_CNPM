@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import "./App.css";
 
 import DauTrang from "./thanhphan/dautrang";
@@ -13,60 +14,126 @@ import Poster from "./thanhphan/poster";
 import DangNhap from "./thanhphan/dangnhap";
 import DangKy from "./thanhphan/dangky";
 
+import Admin from "./thanhphan/admin";
+import NhanVien from "./thanhphan/nhanvien";
+
 function App() {
+  // =========================
+  // HIỂN THỊ POPUP
+  // =========================
+
   const [hienDangNhap, setHienDangNhap] = useState(false);
   const [hienDangKy, setHienDangKy] = useState(false);
 
+  // =========================
+  // KIỂM TRA USER ĐÃ ĐĂNG NHẬP
+  // =========================
+
+  const [user, setUser] = useState(() => {
+    const userDaLuu = localStorage.getItem("user");
+
+    if (userDaLuu) {
+      try {
+        return JSON.parse(userDaLuu);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
+  });
+
+  // =========================
+  // ĐĂNG XUẤT
+  // =========================
+
+  const xuLyDangXuat = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    alert("Đã đăng xuất!");
+  };
+
   return (
     <div className="web-layout">
-      {/* POSTER */}
-      <Poster />
+      {/* =========================
+          ADMIN
+      ========================= */}
 
-      <div className="page">
-        {/* HEADER */}
-        <DauTrang />
+      {user?.role === "admin" ? (
+        <Admin user={user} dangXuat={xuLyDangXuat} />
+      ) : user?.role === "staff" ? (
+        /* =========================
+            NHÂN VIÊN
+        ========================= */
 
-        {/* NÚT ĐĂNG NHẬP - ĐĂNG KÝ */}
-        <div className="auth-buttons">
-          <button onClick={() => setHienDangNhap(true)}>ĐĂNG NHẬP</button>
+        <NhanVien user={user} dangXuat={xuLyDangXuat} />
+      ) : (
+        /* =========================
+            KHÁCH HÀNG / CHƯA ĐĂNG NHẬP
+        ========================= */
 
-          <button onClick={() => setHienDangKy(true)}>ĐĂNG KÝ</button>
-        </div>
+        <>
+          <Poster />
 
-        {/* NỘI DUNG WEBSITE */}
-        <TrinhChieu />
+          <div className="page">
+            {/* =========================
+                HEADER
+            ========================= */}
 
-        <DanhMuc />
+            <DauTrang
+              user={user}
+              setHienDangNhap={setHienDangNhap}
+              setHienDangKy={setHienDangKy}
+              xuLyDangXuat={xuLyDangXuat}
+            />
 
-        <SanPham />
+            {/* =========================
+                NỘI DUNG WEBSITE
+            ========================= */}
 
-        <GioiThieu />
+            <TrinhChieu />
+            <DanhMuc />
+            <SanPham />
+            <GioiThieu />
+            <DanhGia />
+            <ChanTrang />
+          </div>
 
-        <DanhGia />
+          {/* =========================
+              POPUP ĐĂNG NHẬP
+          ========================= */}
 
-        <ChanTrang />
-      </div>
+          {hienDangNhap && (
+            <DangNhap
+              dong={() => setHienDangNhap(false)}
+              sangDangKy={() => {
+                setHienDangNhap(false);
+                setHienDangKy(true);
+              }}
+              dangNhapThanhCong={(userData) => {
+                console.log("USER ĐĂNG NHẬP:", userData);
+                console.log("ROLE:", userData.role);
 
-      {/* ĐĂNG NHẬP */}
-      {hienDangNhap && (
-        <DangNhap
-          dong={() => setHienDangNhap(false)}
-          sangDangKy={() => {
-            setHienDangNhap(false);
-            setHienDangKy(true);
-          }}
-        />
-      )}
+                setUser(userData);
+                setHienDangNhap(false);
+              }}
+            />
+          )}
 
-      {/* ĐĂNG KÝ */}
-      {hienDangKy && (
-        <DangKy
-          dong={() => setHienDangKy(false)}
-          sangDangNhap={() => {
-            setHienDangKy(false);
-            setHienDangNhap(true);
-          }}
-        />
+          {/* =========================
+              POPUP ĐĂNG KÝ
+          ========================= */}
+
+          {hienDangKy && (
+            <DangKy
+              dong={() => setHienDangKy(false)}
+              sangDangNhap={() => {
+                setHienDangKy(false);
+                setHienDangNhap(true);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

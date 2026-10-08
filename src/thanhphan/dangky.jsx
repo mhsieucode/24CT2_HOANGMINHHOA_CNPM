@@ -6,7 +6,7 @@ function DangKy({ dong, sangDangNhap }) {
   const [matKhau, setMatKhau] = useState("");
   const [nhapLaiMatKhau, setNhapLaiMatKhau] = useState("");
 
-  const xuLyDangKy = (e) => {
+  const xuLyDangKy = async (e) => {
     e.preventDefault();
 
     // Kiểm tra bỏ trống
@@ -21,27 +21,46 @@ function DangKy({ dong, sangDangNhap }) {
       return;
     }
 
-    // Lưu tài khoản
-    const taiKhoan = {
-      hoTen: hoTen,
-      email: email,
-      matKhau: matKhau,
-    };
+    try {
+      // Gửi dữ liệu đăng ký lên backend
+      const response = await fetch("http://localhost:5000/api/dang-ky", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hoTen: hoTen,
+          email: email,
+          matKhau: matKhau,
+        }),
+      });
 
-    localStorage.setItem("taiKhoan", JSON.stringify(taiKhoan));
+      const data = await response.json();
 
-    // Thông báo
-    alert("Đăng ký thành công!");
+      // Nếu backend báo lỗi
+      if (!response.ok) {
+        alert(data.message || "Đăng ký thất bại!");
+        return;
+      }
 
-    // Xóa dữ liệu
-    setHoTen("");
-    setEmail("");
-    setMatKhau("");
-    setNhapLaiMatKhau("");
+      // Đăng ký thành công
+      alert("Đăng ký thành công!");
 
-    // Chuyển sang đăng nhập
-    dong();
-    sangDangNhap();
+      // Xóa dữ liệu trong form
+      setHoTen("");
+      setEmail("");
+      setMatKhau("");
+      setNhapLaiMatKhau("");
+
+      // Đóng form đăng ký
+      dong();
+
+      // Chuyển sang form đăng nhập
+      sangDangNhap();
+    } catch (error) {
+      console.error("Lỗi đăng ký:", error);
+      alert("Không thể kết nối đến server!");
+    }
   };
 
   return (
@@ -52,7 +71,6 @@ function DangKy({ dong, sangDangNhap }) {
         </button>
 
         <h2>ĐĂNG KÝ</h2>
-
         <p>Tạo tài khoản MOTO SHOP</p>
 
         <form onSubmit={xuLyDangKy}>

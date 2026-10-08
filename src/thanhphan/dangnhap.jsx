@@ -1,37 +1,57 @@
 import { useState } from "react";
 
-function DangNhap({ dong, sangDangKy }) {
+function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
   const [email, setEmail] = useState("");
   const [matKhau, setMatKhau] = useState("");
 
-  const xuLyDangNhap = (e) => {
+  const xuLyDangNhap = async (e) => {
     e.preventDefault();
 
-    // Kiểm tra bỏ trống
     if (!email || !matKhau) {
       alert("Vui lòng nhập email và mật khẩu!");
       return;
     }
 
-    // Lấy tài khoản đã đăng ký
-    const taiKhoan = JSON.parse(localStorage.getItem("taiKhoan"));
+    try {
+      const response = await fetch("http://localhost:5000/api/dang-nhap", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          matKhau: matKhau,
+        }),
+      });
 
-    // Chưa có tài khoản
-    if (!taiKhoan) {
-      alert("Bạn chưa có tài khoản. Vui lòng đăng ký!");
-      return;
-    }
+      const data = await response.json();
 
-    // Kiểm tra tài khoản
-    if (email === taiKhoan.email && matKhau === taiKhoan.matKhau) {
-      alert(`Đăng nhập thành công! Chào mừng ${taiKhoan.hoTen}`);
+      if (!response.ok) {
+        alert(data.message || "Đăng nhập thất bại!");
+        return;
+      }
+
+      // Lưu thông tin người dùng, bao gồm cả role
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      console.log("Người đăng nhập:", data.user);
+      console.log("Role:", data.user.role);
+
+      alert("Đăng nhập thành công!");
 
       setEmail("");
       setMatKhau("");
 
+      // Đóng popup
       dong();
-    } else {
-      alert("Email hoặc mật khẩu không chính xác!");
+
+      // Báo cho App biết đã đăng nhập
+      if (dangNhapThanhCong) {
+        dangNhapThanhCong(data.user);
+      }
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      alert("Không thể kết nối đến server!");
     }
   };
 
@@ -44,7 +64,7 @@ function DangNhap({ dong, sangDangKy }) {
 
         <h2>ĐĂNG NHẬP</h2>
 
-        <p>Chào mừng bạn đến với MOTO SHOP</p>
+        <p>Chào mừng bạn trở lại MOTO SHOP</p>
 
         <form onSubmit={xuLyDangNhap}>
           <input
