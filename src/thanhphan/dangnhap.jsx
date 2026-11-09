@@ -31,7 +31,7 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
         return;
       }
 
-      // Lưu thông tin người dùng, bao gồm cả role
+      // Lưu thông tin người dùng, bao gồm role
       localStorage.setItem("user", JSON.stringify(data.user));
 
       console.log("Người đăng nhập:", data.user);

@@ -1,8 +1,8 @@
 function ChanTrang() {
   return (
     <footer className="footer" id="lienhe">
+      {/* LOGO + GIỚI THIỆU */}
       <div className="footer-top">
-        {/* LOGO + GIỚI THIỆU */}
         <div className="footer-brand">
           <h2>🏍️ MOTO SHOP</h2>
           <p>Đam mê tốc độ - Đồng hành cùng biker.</p>

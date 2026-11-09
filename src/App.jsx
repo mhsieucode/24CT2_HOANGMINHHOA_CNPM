@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import "./App.css";
 
 import DauTrang from "./thanhphan/dautrang";
@@ -16,19 +15,21 @@ import DangKy from "./thanhphan/dangky";
 
 import Admin from "./thanhphan/admin";
 import NhanVien from "./thanhphan/nhanvien";
+import GioHang from "./thanhphan/giohang";
+import QuanLySanPham from "./thanhphan/quanlysanpham";
 
 function App() {
-  // =========================
   // HIỂN THỊ POPUP
-  // =========================
-
   const [hienDangNhap, setHienDangNhap] = useState(false);
   const [hienDangKy, setHienDangKy] = useState(false);
 
-  // =========================
-  // KIỂM TRA USER ĐÃ ĐĂNG NHẬP
-  // =========================
+  // HIỂN THỊ GIỎ HÀNG
+  const [hienGioHang, setHienGioHang] = useState(false);
 
+  // HIỂN THỊ QUẢN LÝ SẢN PHẨM
+  const [hienQuanLySanPham, setHienQuanLySanPham] = useState(false);
+
+  // KIỂM TRA USER ĐÃ ĐĂNG NHẬP
   const [user, setUser] = useState(() => {
     const userDaLuu = localStorage.getItem("user");
 
@@ -43,66 +44,87 @@ function App() {
     return null;
   });
 
-  // =========================
   // ĐĂNG XUẤT
-  // =========================
-
   const xuLyDangXuat = () => {
     localStorage.removeItem("user");
     setUser(null);
+    setHienGioHang(false);
+    setHienQuanLySanPham(false);
     alert("Đã đăng xuất!");
+  };
+
+  // ĐÓNG GIỎ HÀNG
+  const dongGioHang = () => {
+    setHienGioHang(false);
+  };
+
+  // MỞ GIỎ HÀNG
+  const moGioHang = () => {
+    setHienGioHang(true);
   };
 
   return (
     <div className="web-layout">
-      {/* =========================
-          ADMIN
-      ========================= */}
-
+      {/* ADMIN */}
       {user?.role === "admin" ? (
-        <Admin user={user} dangXuat={xuLyDangXuat} />
+        hienQuanLySanPham ? (
+          // MÀN HÌNH QUẢN LÝ SẢN PHẨM
+          <QuanLySanPham dong={() => setHienQuanLySanPham(false)} />
+        ) : (
+          // MÀN HÌNH ADMIN DASHBOARD
+          <Admin
+            user={user}
+            dangXuat={xuLyDangXuat}
+            dongMoQuanLySanPham={() => setHienQuanLySanPham(true)}
+          />
+        )
       ) : user?.role === "staff" ? (
-        /* =========================
-            NHÂN VIÊN
-        ========================= */
-
+        // NHÂN VIÊN
         <NhanVien user={user} dangXuat={xuLyDangXuat} />
       ) : (
-        /* =========================
-            KHÁCH HÀNG / CHƯA ĐĂNG NHẬP
-        ========================= */
-
+        // KHÁCH HÀNG / CHƯA ĐĂNG NHẬP
         <>
           <Poster />
 
           <div className="page">
-            {/* =========================
-                HEADER
-            ========================= */}
-
+            {/* HEADER */}
             <DauTrang
               user={user}
               setHienDangNhap={setHienDangNhap}
               setHienDangKy={setHienDangKy}
               xuLyDangXuat={xuLyDangXuat}
+              moGioHang={moGioHang}
+              dongGioHang={dongGioHang}
             />
 
-            {/* =========================
-                NỘI DUNG WEBSITE
-            ========================= */}
+            {/* NỘI DUNG WEBSITE */}
+            {hienGioHang ? (
+              <GioHang dong={dongGioHang} />
+            ) : (
+              <>
+                <div id="trangchu">
+                  <TrinhChieu />
+                  <DanhMuc />
+                </div>
 
-            <TrinhChieu />
-            <DanhMuc />
-            <SanPham />
-            <GioiThieu />
-            <DanhGia />
-            <ChanTrang />
+                <div id="sanpham">
+                  <SanPham />
+                </div>
+
+                <div id="gioithieu">
+                  <GioiThieu />
+                </div>
+
+                <DanhGia />
+
+                <div id="lienhe">
+                  <ChanTrang />
+                </div>
+              </>
+            )}
           </div>
 
-          {/* =========================
-              POPUP ĐĂNG NHẬP
-          ========================= */}
-
+          {/* POPUP ĐĂNG NHẬP */}
           {hienDangNhap && (
             <DangNhap
               dong={() => setHienDangNhap(false)}
@@ -115,15 +137,15 @@ function App() {
                 console.log("ROLE:", userData.role);
 
                 setUser(userData);
+
+                localStorage.setItem("user", JSON.stringify(userData));
+
                 setHienDangNhap(false);
               }}
             />
           )}
 
-          {/* =========================
-              POPUP ĐĂNG KÝ
-          ========================= */}
-
+          {/* POPUP ĐĂNG KÝ */}
           {hienDangKy && (
             <DangKy
               dong={() => setHienDangKy(false)}

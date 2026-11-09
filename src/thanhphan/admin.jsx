@@ -1,18 +1,30 @@
 import { useEffect, useState } from "react";
 
-function Admin({ user, dangXuat }) {
+function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
   const [danhSachUser, setDanhSachUser] = useState([]);
   const [dangTai, setDangTai] = useState(false);
 
+  // ID tài khoản đang đăng nhập
+  const userId = String(user?.id || user?._id || "");
+
   // =========================
-  // LẤY DANH SÁCH USER
+  // LẤY DANH SÁCH TÀI KHOẢN
   // =========================
 
   const layDanhSachUser = async () => {
+    if (!userId) {
+      alert("Không tìm thấy thông tin người đăng nhập!");
+      return;
+    }
+
     try {
       setDangTai(true);
 
-      const response = await fetch("http://localhost:5000/api/admin/users");
+      const response = await fetch("http://localhost:5000/api/admin/users", {
+        headers: {
+          "x-user-id": userId,
+        },
+      });
 
       const data = await response.json();
 
@@ -21,9 +33,9 @@ function Admin({ user, dangXuat }) {
         return;
       }
 
-      setDanhSachUser(data.users);
+      setDanhSachUser(data.users || []);
     } catch (error) {
-      console.error("Lỗi:", error);
+      console.error("Lỗi lấy danh sách tài khoản:", error);
       alert("Không thể kết nối đến server!");
     } finally {
       setDangTai(false);
@@ -31,14 +43,36 @@ function Admin({ user, dangXuat }) {
   };
 
   useEffect(() => {
-    layDanhSachUser();
-  }, []);
+    if (userId) {
+      layDanhSachUser();
+    }
+  }, [userId]);
 
   // =========================
-  // ĐỔI QUYỀN
+  // ĐỔI QUYỀN TÀI KHOẢN
   // =========================
 
   const doiQuyen = async (id, roleMoi) => {
+    if (!userId) {
+      alert("Không tìm thấy thông tin người đăng nhập!");
+      return;
+    }
+
+    const taiKhoanDangSua = danhSachUser.find(
+      (item) => String(item._id) === String(id)
+    );
+
+    // Không cho admin tự hạ quyền
+    if (
+      String(id) === userId &&
+      taiKhoanDangSua?.role === "admin" &&
+      roleMoi !== "admin"
+    ) {
+      alert("Bạn không thể tự hạ quyền admin của mình!");
+      await layDanhSachUser();
+      return;
+    }
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/admin/users/${id}/role`,
@@ -46,6 +80,7 @@ function Admin({ user, dangXuat }) {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            "x-user-id": userId,
           },
           body: JSON.stringify({
             role: roleMoi,
@@ -57,12 +92,13 @@ function Admin({ user, dangXuat }) {
 
       if (!response.ok) {
         alert(data.message || "Không thể đổi quyền!");
+        await layDanhSachUser();
         return;
       }
 
       alert("Đổi quyền thành công!");
 
-      layDanhSachUser();
+      await layDanhSachUser();
     } catch (error) {
       console.error("Lỗi đổi quyền:", error);
       alert("Không thể kết nối đến server!");
@@ -70,23 +106,34 @@ function Admin({ user, dangXuat }) {
   };
 
   // =========================
-  // XÓA USER
+  // XÓA TÀI KHOẢN
   // =========================
 
   const xoaUser = async (id, hoTen) => {
+    if (!userId) {
+      alert("Không tìm thấy thông tin người đăng nhập!");
+      return;
+    }
+
+    if (String(id) === userId) {
+      alert("Bạn không thể tự xóa tài khoản đang đăng nhập!");
+      return;
+    }
+
     const xacNhan = window.confirm(
       `Bạn có chắc muốn xóa tài khoản "${hoTen}" không?`
     );
 
-    if (!xacNhan) {
-      return;
-    }
+    if (!xacNhan) return;
 
     try {
       const response = await fetch(
         `http://localhost:5000/api/admin/users/${id}`,
         {
           method: "DELETE",
+          headers: {
+            "x-user-id": userId,
+          },
         }
       );
 
@@ -99,42 +146,40 @@ function Admin({ user, dangXuat }) {
 
       alert("Xóa tài khoản thành công!");
 
-      layDanhSachUser();
+      await layDanhSachUser();
     } catch (error) {
-      console.error("Lỗi xóa user:", error);
+      console.error("Lỗi xóa tài khoản:", error);
       alert("Không thể kết nối đến server!");
     }
   };
 
   // =========================
-  // HIỂN THỊ ROLE
+  // HIỂN THỊ QUYỀN
   // =========================
 
   const hienThiRole = (role) => {
-    if (role === "admin") {
-      return "ADMIN";
-    }
-
-    if (role === "staff") {
-      return "NHÂN VIÊN";
-    }
+    if (role === "admin") return "ADMIN";
+    if (role === "staff") return "NHÂN VIÊN";
 
     return "KHÁCH HÀNG";
   };
 
+  // =========================
+  // GIAO DIỆN ADMIN
+  // =========================
+
   return (
     <div className="admin-page">
-      {/* =========================
-          HEADER
-      ========================= */}
-
+      {/* HEADER */}
       <div className="admin-header">
         <div>
           <h1>ADMIN DASHBOARD</h1>
 
           <p>
-            Xin chào, <strong>{user?.hoTen}</strong>
+            Xin chào, <strong>{user?.hoTen || "Admin"}</strong>
           </p>
+
+          <p>Quyền: ADMIN</p>
         </div>
 
         <button className="admin-logout" onClick={dangXuat}>
@@ -142,10 +187,7 @@ function Admin({ user, dangXuat }) {
         </button>
       </div>
 
-      {/* =========================
-          MENU ADMIN
-      ========================= */}
-
+      {/* MENU ADMIN */}
       <div className="admin-menu">
         <div className="admin-card">
           <div className="admin-icon">👤</div>
@@ -162,7 +204,7 @@ function Admin({ user, dangXuat }) {
 
           <p>Thêm, sửa, xóa và cập nhật sản phẩm.</p>
 
-          <button>QUẢN LÝ</button>
+          <button onClick={dongMoQuanLySanPham}>QUẢN LÝ</button>
         </div>
 
         <div className="admin-card">
@@ -172,7 +214,11 @@ function Admin({ user, dangXuat }) {
 
           <p>Xem và quản lý đơn hàng của khách hàng.</p>
 
-          <button>QUẢN LÝ</button>
+          <button
+            onClick={() => alert("Bạn cần kết nối chức năng quản lý đơn hàng!")}
+          >
+            QUẢN LÝ
+          </button>
         </div>
 
         <div className="admin-card">
@@ -182,14 +228,13 @@ function Admin({ user, dangXuat }) {
 
           <p>Xem doanh thu và tình hình hoạt động.</p>
 
-          <button>XEM THỐNG KÊ</button>
+          <button onClick={() => alert("Bạn cần kết nối chức năng thống kê!")}>
+            XEM THỐNG KÊ
+          </button>
         </div>
       </div>
 
-      {/* =========================
-          QUẢN LÝ TÀI KHOẢN
-      ========================= */}
-
+      {/* QUẢN LÝ TÀI KHOẢN */}
       <div className="admin-users">
         <div className="admin-users-header">
           <div>
@@ -200,15 +245,21 @@ function Admin({ user, dangXuat }) {
             </p>
           </div>
 
-          <button className="admin-refresh" onClick={layDanhSachUser}>
-            🔄 LÀM MỚI
+          <button
+            className="admin-refresh"
+            onClick={layDanhSachUser}
+            disabled={dangTai}
+          >
+            {dangTai ? "ĐANG TẢI..." : "🔄 LÀM MỚI"}
           </button>
         </div>
 
         {dangTai ? (
           <div className="admin-loading">Đang tải danh sách tài khoản...</div>
         ) : danhSachUser.length === 0 ? (
-          <div className="admin-loading">Chưa có tài khoản nào.</div>
+          <div className="admin-loading">
+            Chưa có tài khoản nào hoặc không thể tải danh sách.
+          </div>
         ) : (
           <div className="admin-table-container">
             <table className="admin-table">
@@ -241,6 +292,9 @@ function Admin({ user, dangXuat }) {
                       <div className="admin-actions">
                         <select
                           value={item.role}
+                          disabled={
+                            String(item._id) === userId && item.role === "admin"
+                          }
                           onChange={(e) => doiQuyen(item._id, e.target.value)}
                         >
                           <option value="customer">Khách hàng</option>
@@ -252,6 +306,7 @@ function Admin({ user, dangXuat }) {
 
                         <button
                           className="delete-user"
+                          disabled={String(item._id) === userId}
                           onClick={() => xoaUser(item._id, item.hoTen)}
                         >
                           XÓA

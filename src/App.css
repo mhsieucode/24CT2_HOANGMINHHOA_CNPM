@@ -1,4 +1,23 @@
+/* =========================================================
+   MOTOSHOP - TONE ĐEN SANG TRỌNG, ĐỎ McQUEEN
+   Nền chính: đen | Điểm nhấn: đỏ đua xe | Chữ: trắng/xám
+   Ghi chú: Mỗi khu vực CSS được chia bằng tiêu đề tiếng Việt.
+========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700;800&display=swap");
+
+/* =========================
+   BẢNG MÀU CHỦ ĐẠO
+========================= */
+:root {
+  --moto-black: #050505;
+  --moto-card: #111111;
+  --moto-red: #e10600;
+  --moto-red-dark: #b30000;
+  --moto-red-light: #ff3333;
+  --moto-white: #ffffff;
+  --moto-gray: #aaaaaa;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -80,29 +99,53 @@ body {
 
 @media (max-width: 1000px) {
   .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
     padding: 0 12px;
+    gap: 12px;
+    box-sizing: border-box;
   }
 
   .logo {
-    width: 160px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .logo img {
+    width: 55px;
+    height: 45px;
+    object-fit: contain;
   }
 
   .logo span {
-    font-size: 17px;
+    font-size: 20px;
+    font-weight: bold;
+    white-space: nowrap;
   }
 
   .nav-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 10px;
+    flex: 1;
   }
 
   .nav-menu a {
     font-size: 11px;
+    white-space: nowrap;
   }
 
   .login-btn,
   .register-btn {
     padding: 0 9px;
     font-size: 10px;
+    flex-shrink: 0;
   }
 }
 
@@ -126,27 +169,32 @@ body {
   z-index: 10;
 }
 
-/* LOGO */
+/* ================= LOGO ================= */
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: "Bebas Neue", sans-serif;
   font-size: 32px;
   font-style: italic;
   letter-spacing: 2px;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .logo img {
-  width: 100px;
-  height: 70px;
+  width: px;
+  height: 55px;
   object-fit: contain;
 }
 
 .logo span {
   font-size: 22px;
   font-weight: bold;
-  color: #a855f7;
+  color: #e10600;
+  white-space: nowrap;
 }
-
 /* MENU */
 
 /* =========================
@@ -231,7 +279,7 @@ body {
 }
 
 .nav-menu a:hover {
-  color: #a855f7;
+  color: #e10600;
 }
 
 .nav-menu a::after {
@@ -244,7 +292,7 @@ body {
   width: 0;
   height: 2px;
 
-  background: #a855f7;
+  background: #e10600;
 
   transition: 0.3s;
 }
@@ -285,15 +333,15 @@ body {
   background: transparent;
   color: white;
 
-  border: 1px solid #8b5cf6;
+  border: 1px solid #ff1e1e;
 }
 
 .login-btn:hover {
-  background: #8b5cf6;
+  background: #ff1e1e;
 }
 
 .register-btn {
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #b30000, #e10600);
 
   color: white;
   border: none;
@@ -312,7 +360,7 @@ body {
 }
 
 .cart:hover {
-  color: #a855f7;
+  color: #e10600;
 }
 
 /* =========================================================
@@ -320,13 +368,15 @@ body {
 ========================================================= */
 
 .slider {
-  width: 100%;
-  height: 550px;
-
   position: relative;
+  width: 100%;
+  height: 750px;
   overflow: hidden;
-
-  background: #111;
+  background: #000;
+}
+/* ẨN CÁC NÚT ĐIỀU KHIỂN VIDEO */
+.banner-video {
+  pointer-events: none;
 }
 
 .slider img {
@@ -338,6 +388,20 @@ body {
   display: block;
 }
 
+.banner-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* RESPONSIVE ĐIỆN THOẠI */
+@media (max-width: 768px) {
+  .slider {
+    height: 250px;
+  }
+}
 /* NÚT */
 
 .prev,
@@ -378,8 +442,8 @@ body {
 
 .prev:hover,
 .next:hover {
-  background: #8b2be2;
-  border-color: #8b2be2;
+  background: #d90000;
+  border-color: #d90000;
   transform: translateY(-50%) scale(1.08);
 }
 
@@ -408,7 +472,7 @@ body {
 
   font-weight: bold;
 
-  color: #a855f7;
+  color: #e10600;
 }
 
 .category-header h2 {
@@ -472,7 +536,7 @@ body {
 /* HOVER */
 
 .category-item:hover .category-circle {
-  border-color: #a855f7;
+  border-color: #e10600;
 
   transform: translateY(-8px);
 
@@ -496,7 +560,7 @@ body {
 }
 
 .category-item:hover h3 {
-  color: #a855f7;
+  color: #e10600;
 }
 
 .category-item span {
@@ -508,7 +572,7 @@ body {
 }
 
 .category-item:hover span {
-  color: #a855f7;
+  color: #e10600;
 }
 
 /* =========================================================
@@ -540,7 +604,7 @@ body {
 
   font-weight: bold;
 
-  color: #a855f7;
+  color: #e10600;
 }
 
 .section-title h2 {
@@ -596,7 +660,7 @@ body {
 .product-card:hover {
   transform: translateY(-8px);
 
-  border-color: #8b2be2;
+  border-color: #d90000;
 
   box-shadow: 0 15px 35px rgba(139, 43, 226, 0.18);
 }
@@ -722,7 +786,7 @@ body {
 .product-info p {
   margin: 10px 0 18px;
 
-  color: #a855f7;
+  color: #e10600;
 
   font-size: 19px;
 
@@ -738,7 +802,7 @@ body {
 
   padding: 11px;
 
-  border: 1px solid #8b2be2;
+  border: 1px solid #d90000;
 
   border-radius: 5px;
 
@@ -756,7 +820,7 @@ body {
 }
 
 .product-info button:hover {
-  background: #8b2be2;
+  background: #d90000;
 
   transform: translateY(-2px);
 }
@@ -839,7 +903,7 @@ body {
 
   letter-spacing: 4px;
 
-  color: #c084fc;
+  color: #ff5555;
 }
 
 .banner-content h2 {
@@ -996,7 +1060,7 @@ body {
 }
 
 .about-content strong {
-  color: #a855f7;
+  color: #e10600;
 }
 
 /* BUTTON */
@@ -1010,7 +1074,7 @@ body {
 
   border-radius: 5px;
 
-  background: #8b2be2;
+  background: #d90000;
 
   color: white;
 
@@ -1022,7 +1086,7 @@ body {
 }
 
 .about-button:hover {
-  background: #a855f7;
+  background: #e10600;
 
   transform: translateY(-2px);
 }
@@ -1104,7 +1168,7 @@ body {
 }
 
 .detail-close:hover {
-  background: #7c3aed;
+  background: #b30000;
 
   transform: rotate(90deg);
 }
@@ -1182,7 +1246,7 @@ body {
 }
 
 .detail-dots span.active {
-  background: #7c3aed;
+  background: #b30000;
 
   transform: scale(1.15);
 }
@@ -1215,7 +1279,7 @@ body {
 
   background: rgba(124, 58, 237, 0.15);
 
-  color: #a78bfa;
+  color: #ff4d4d;
 
   font-size: 12px;
 
@@ -1275,7 +1339,7 @@ body {
 ========================================= */
 
 .detail-price {
-  color: #a78bfa;
+  color: #ff4d4d;
 
   font-size: 30px;
 
@@ -1388,7 +1452,7 @@ body {
 }
 
 .quantity-box button:hover {
-  background: #7c3aed;
+  background: #b30000;
 }
 
 .quantity-box span {
@@ -1431,15 +1495,15 @@ body {
 .detail-cart-button {
   flex: 1;
 
-  border: 1px solid #7c3aed;
+  border: 1px solid #b30000;
 
-  background: #7c3aed;
+  background: #b30000;
 
   color: white;
 }
 
 .detail-cart-button:hover {
-  background: #6d28d9;
+  background: #b30000;
 
   transform: translateY(-2px);
 }
@@ -1581,7 +1645,7 @@ body {
 .about-feature:hover {
   transform: translateY(-5px);
 
-  border-color: #8b2be2;
+  border-color: #d90000;
 }
 
 .feature-icon {
@@ -1631,7 +1695,7 @@ body {
 }
 
 .reviews-title span {
-  color: #a855f7;
+  color: #e10600;
 }
 
 /* Form đánh giá */
@@ -1662,7 +1726,7 @@ body {
 }
 
 .review-form input:focus {
-  border-color: #a855f7;
+  border-color: #e10600;
 }
 
 .review-form label {
@@ -1688,7 +1752,7 @@ body {
 }
 
 .review-form textarea:focus {
-  border-color: #a855f7;
+  border-color: #e10600;
 }
 
 /* Sao */
@@ -1704,7 +1768,7 @@ body {
   margin-left: 5px;
   border: none;
   border-radius: 5px;
-  background: #a855f7;
+  background: #e10600;
   color: white;
   font-weight: bold;
   cursor: pointer;
@@ -1712,7 +1776,7 @@ body {
 }
 
 .review-form button:hover {
-  background: #7e22ce;
+  background: #a80000;
   transform: translateY(-2px);
 }
 
@@ -1750,7 +1814,7 @@ body {
 }
 
 .review-item:hover {
-  border-color: #a855f7;
+  border-color: #e10600;
   transform: translateY(-3px);
 }
 
@@ -1766,7 +1830,7 @@ body {
   justify-content: center;
 
   border-radius: 50%;
-  background: #8b2be2;
+  background: #d90000;
 
   color: white;
   font-size: 20px;
@@ -1871,7 +1935,7 @@ body {
 
   font-size: 25px;
 
-  color: #a855f7;
+  color: #e10600;
 }
 
 .footer-brand p {
@@ -1926,7 +1990,7 @@ body {
 }
 
 .footer-links a:hover {
-  color: #b56cff;
+  color: #ff3333;
 
   transform: translateX(4px);
 }
@@ -2294,7 +2358,7 @@ body {
 /* Chữ nhỏ */
 
 .category-product .banner-content span {
-  color: #a855f7;
+  color: #e10600;
 
   font-size: 11px;
   font-weight: bold;
@@ -2376,7 +2440,7 @@ body {
 }
 
 .category-product .product-card:hover {
-  border-color: #8b2be2;
+  border-color: #d90000;
 
   transform: translateY(-4px);
 
@@ -2437,7 +2501,7 @@ body {
 }
 
 .category-product .product-card .product-info small {
-  color: #a855f7;
+  color: #e10600;
 
   font-size: 9px;
 
@@ -2459,7 +2523,7 @@ body {
 .category-product .product-card .product-info p {
   margin: 0 0 15px;
 
-  color: #a855f7;
+  color: #e10600;
 
   font-size: 17px;
 
@@ -2483,7 +2547,7 @@ body {
 
   margin-top: auto;
 
-  border: 1px solid #8b2be2;
+  border: 1px solid #d90000;
 
   border-radius: 4px;
 
@@ -2501,7 +2565,7 @@ body {
 }
 
 .category-product .product-card .product-info button:hover {
-  background: #8b2be2;
+  background: #d90000;
 
   transform: translateY(-2px);
 }
@@ -2549,7 +2613,7 @@ body {
 
   padding: 5px 10px;
 
-  background: #8b2be2;
+  background: #d90000;
 
   color: white;
 
@@ -2632,12 +2696,12 @@ body {
   color: #fff;
   background: transparent;
 
-  border: 1px solid #7c3aed;
+  border: 1px solid #b30000;
 }
 
 .auth-buttons button:first-child:hover {
   color: #fff;
-  background: #7c3aed;
+  background: #b30000;
 
   box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
 
@@ -2649,9 +2713,9 @@ body {
 .auth-buttons button:last-child {
   color: #fff;
 
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #b30000, #e10600);
 
-  border: 1px solid #8b5cf6;
+  border: 1px solid #ff1e1e;
 
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
 }
@@ -2812,7 +2876,7 @@ body {
 }
 
 .auth-box input:focus {
-  border-color: #8b5cf6;
+  border-color: #ff1e1e;
 
   background: #1c1c1c;
 
@@ -2834,7 +2898,7 @@ body {
 
   color: white;
 
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, #b30000, #b30000);
 
   border: none;
 
@@ -2854,7 +2918,7 @@ body {
 }
 
 .auth-submit:hover {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, #ff1e1e, #e10600);
 
   transform: translateY(-2px);
 
@@ -2924,7 +2988,7 @@ body {
 }
 
 .auth-change span {
-  color: #a78bfa;
+  color: #ff4d4d;
 
   font-weight: 700;
 
@@ -3032,14 +3096,14 @@ body {
   align-items: center;
   padding: 25px;
   margin-bottom: 30px;
-  border: 1px solid #8b5cf6;
+  border: 1px solid #ff1e1e;
   border-radius: 12px;
   background: #0d0d0d;
 }
 
 .admin-header h1 {
   margin: 0 0 8px;
-  color: #a855f7;
+  color: #e10600;
 }
 
 .admin-header p {
@@ -3064,7 +3128,7 @@ body {
 
 .admin-card:hover {
   transform: translateY(-5px);
-  border-color: #a855f7;
+  border-color: #e10600;
 }
 
 .admin-icon {
@@ -3086,7 +3150,7 @@ body {
 .admin-card button,
 .admin-logout {
   border: none;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #b30000, #e10600);
   color: white;
   padding: 10px 18px;
   border-radius: 6px;
@@ -3116,14 +3180,14 @@ body {
   align-items: center;
   padding: 25px;
   margin-bottom: 30px;
-  border: 1px solid #a855f7;
+  border: 1px solid #e10600;
   border-radius: 12px;
   background: #0d0d0d;
 }
 
 .nhanvien-header h1 {
   margin: 0 0 8px;
-  color: #a855f7;
+  color: #e10600;
 }
 
 .nhanvien-header p {
@@ -3148,7 +3212,7 @@ body {
 
 .nhanvien-card:hover {
   transform: translateY(-5px);
-  border-color: #a855f7;
+  border-color: #e10600;
 }
 
 .nhanvien-icon {
@@ -3170,7 +3234,7 @@ body {
 .nhanvien-card button,
 .nhanvien-logout {
   border: none;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #b30000, #e10600);
   color: white;
   padding: 10px 18px;
   border-radius: 6px;
@@ -3230,7 +3294,7 @@ body {
 
 .admin-users-header h2 {
   margin: 0 0 5px;
-  color: #a855f7;
+  color: #e10600;
 }
 
 .admin-users-header p {
@@ -3248,7 +3312,7 @@ body {
 }
 
 .admin-refresh:hover {
-  background: #a855f7;
+  background: #e10600;
 }
 
 .admin-loading {
@@ -3269,7 +3333,7 @@ body {
 
 .admin-table th {
   background: #181818;
-  color: #a855f7;
+  color: #e10600;
   padding: 14px 10px;
   text-align: left;
   border-bottom: 1px solid #333;
@@ -3304,7 +3368,7 @@ body {
 }
 
 .role-admin {
-  background: #7c3aed;
+  background: #b30000;
   color: white;
 }
 
@@ -3342,4 +3406,348 @@ body {
     align-items: flex-start;
     gap: 15px;
   }
+}
+
+/* =========================================================
+   GIỎ HÀNG - NỀN VÀ BỐ CỤC CHÍNH
+========================================================= */
+.giohang-page {
+  background: #080808;
+  color: white;
+  min-height: 100vh;
+  padding-bottom: 60px;
+  font-family: Arial, sans-serif;
+}
+
+/* =========================
+   GIỎ HÀNG - BANNER TIÊU ĐỀ
+========================= */
+.giohang-banner {
+  text-align: center;
+  padding: 55px 20px;
+  background: linear-gradient(135deg, #111, #260707);
+  border-bottom: 2px solid #e10600;
+}
+
+.giohang-banner p {
+  color: #ff4d4d;
+  letter-spacing: 3px;
+  font-size: 13px;
+}
+
+.giohang-banner h1 {
+  font-size: 36px;
+  font-weight: 900;
+  margin: 15px 0;
+}
+
+.giohang-banner span {
+  color: #aaa;
+}
+
+/* =========================
+   GIỎ HÀNG - KHUNG CHỨA
+========================= */
+.giohang-container {
+  max-width: 1150px;
+  margin: 40px auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+/* =========================
+   GIỎ HÀNG - KHUNG SẢN PHẨM VÀ TÓM TẮT
+========================= */
+.giohang-left,
+.giohang-right {
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.giohang-left h2 {
+  font-size: 24px;
+  margin-bottom: 25px;
+}
+
+.giohang-left h2 span {
+  color: #e10600;
+}
+
+.giohang-header,
+.giohang-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 15px;
+}
+
+.giohang-header {
+  color: #aaa;
+  font-size: 12px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+}
+
+.giohang-item {
+  padding: 22px 0;
+  border-bottom: 1px solid #292929;
+}
+
+.giohang-thongtin {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.giohang-thongtin img {
+  width: 90px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #222;
+}
+
+.giohang-thongtin h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.giohang-thongtin p {
+  color: #999;
+  font-size: 11px;
+}
+
+.giohang-xoa {
+  background: none;
+  border: none;
+  color: #ff5555;
+  cursor: pointer;
+  padding: 0;
+}
+
+.giohang-gia,
+.giohang-tong {
+  font-size: 13px;
+  color: #ddd;
+}
+
+.giohang-tong {
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+.giohang-soluong {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.giohang-soluong button {
+  background: #292929;
+  color: white;
+  border: 1px solid #444;
+  width: 27px;
+  height: 27px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.giohang-soluong button:hover {
+  background: #e10600;
+}
+
+.giohang-right h2 {
+  font-size: 20px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 20px;
+}
+
+.giohang-summary > div {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.mienphi {
+  color: #54d69a;
+  font-weight: bold;
+}
+
+.giohang-total {
+  border-top: 1px solid #333;
+  padding-top: 20px;
+}
+
+.giohang-total strong {
+  color: #ff4d4d;
+  font-size: 20px;
+}
+
+.giohang-thanhtoan,
+.giohang-tieptuc {
+  width: 100%;
+  padding: 15px;
+  margin-top: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.giohang-thanhtoan {
+  background: linear-gradient(135deg, #d90000, #e10600);
+  color: white;
+  border: none;
+}
+
+.giohang-thanhtoan:hover {
+  opacity: 0.85;
+}
+
+.giohang-thanhtoan:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.giohang-tieptuc {
+  background: transparent;
+  color: white;
+  border: 1px solid #555;
+}
+
+.giohang-note {
+  color: #888;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.giohang-trong {
+  text-align: center;
+  padding: 50px 15px;
+}
+
+.giohang-icon {
+  font-size: 55px;
+}
+
+.giohang-trong button {
+  background: #e10600;
+  color: white;
+  border: none;
+  padding: 13px 25px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+@media (max-width: 850px) {
+  .giohang-container {
+    grid-template-columns: 1fr;
+  }
+
+  .giohang-header {
+    display: none;
+  }
+
+  .giohang-item {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .giohang-thongtin {
+    grid-column: 1 / -1;
+  }
+
+  .giohang-banner h1 {
+    font-size: 26px;
+  }
+}
+
+/* =========================================================
+   QUẢN LÝ SẢN PHẨM - TRANG ADMIN
+========================================================= */
+.quan-ly-san-pham {
+  background: #080808;
+  color: white;
+  min-height: 100vh;
+  padding: 30px;
+}
+
+.quan-ly-san-pham h1 {
+  color: #e10600;
+  text-align: center;
+}
+
+/* =========================
+   QUẢN LÝ SẢN PHẨM - FORM THÊM/SỬA
+========================= */
+.product-form {
+  max-width: 600px;
+  margin: 25px auto;
+  padding: 25px;
+  background: #151515;
+  border: 1px solid #d90000;
+  border-radius: 12px;
+}
+
+.product-form h2 {
+  color: #e10600;
+}
+
+.product-form input,
+.product-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin: 8px 0;
+  background: #222;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+}
+
+.product-form button,
+.product-table button {
+  background: #b30000;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  margin: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.product-form button:hover,
+.product-table button:hover {
+  background: #e10600;
+}
+
+/* =========================
+   QUẢN LÝ SẢN PHẨM - BẢNG DANH SÁCH
+========================= */
+.product-table {
+  overflow-x: auto;
+}
+
+.product-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #151515;
+}
+
+.product-table th,
+.product-table td {
+  padding: 12px;
+  border: 1px solid #333;
+  text-align: center;
+}
+
+.product-table th {
+  color: #ff5555;
+  background: #222;
 }
