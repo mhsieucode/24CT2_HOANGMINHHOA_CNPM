@@ -19,7 +19,9 @@ function DauTrang({
     <nav className="navbar">
       <div className="logo">
         <img src="/image/logo1.jpg" alt="MOTO SHOP" />
-        <span>MOTO SHOP</span>
+        <h2>
+          MH <span>MOTO</span>
+        </h2>
       </div>
 
       <div className="nav-menu">
@@ -40,7 +42,7 @@ function DauTrang({
         </a>
 
         <button className="cart-btn" onClick={moGioHang}>
-          🛒 Giỏ hàng
+          🛒
         </button>
 
         {!user ? (

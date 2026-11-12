@@ -71,7 +71,7 @@ function DangKy({ dong, sangDangNhap }) {
         </button>
 
         <h2>ĐĂNG KÝ</h2>
-        <p>Tạo tài khoản MOTO SHOP</p>
+        <p>Tạo tài khoản MHMOTO</p>
 
         <form onSubmit={xuLyDangKy}>
           <input

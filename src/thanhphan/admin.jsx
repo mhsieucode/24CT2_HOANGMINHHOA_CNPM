@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import QuanLyDonHang from "./quanlydonhang";
 
 function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
   const [danhSachUser, setDanhSachUser] = useState([]);
   const [dangTai, setDangTai] = useState(false);
+
+  const [hienQuanLyDonHang, setHienQuanLyDonHang] = useState(false);
 
   // ID tài khoản đang đăng nhập
   const userId = String(user?.id || user?._id || "");
@@ -214,10 +217,8 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
 
           <p>Xem và quản lý đơn hàng của khách hàng.</p>
 
-          <button
-            onClick={() => alert("Bạn cần kết nối chức năng quản lý đơn hàng!")}
-          >
-            QUẢN LÝ
+          <button onClick={() => setHienQuanLyDonHang(!hienQuanLyDonHang)}>
+            {hienQuanLyDonHang ? "ĐÓNG QUẢN LÝ" : "QUẢN LÝ"}
           </button>
         </div>
 
@@ -233,6 +234,12 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
           </button>
         </div>
       </div>
+      {/* QUẢN LÝ ĐƠN HÀNG */}
+      {hienQuanLyDonHang && (
+        <div className="admin-orders">
+          <QuanLyDonHang />
+        </div>
+      )}
 
       {/* QUẢN LÝ TÀI KHOẢN */}
       <div className="admin-users">

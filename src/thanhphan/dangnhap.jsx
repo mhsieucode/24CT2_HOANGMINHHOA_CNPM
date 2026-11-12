@@ -31,7 +31,7 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
         return;
       }
 
-      // Lưu thông tin người dùng, bao gồm role
+      // LƯU THÔNG TIN NGƯỜI DÙNG
       localStorage.setItem("user", JSON.stringify(data.user));
 
       console.log("Người đăng nhập:", data.user);
@@ -42,10 +42,10 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
       setEmail("");
       setMatKhau("");
 
-      // Đóng popup
+      // ĐÓNG POPUP
       dong();
 
-      // Báo cho App biết đã đăng nhập
+      // CẬP NHẬT TRẠNG THÁI ĐĂNG NHẬP
       if (dangNhapThanhCong) {
         dangNhapThanhCong(data.user);
       }
@@ -58,37 +58,49 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
   return (
     <div className="auth-overlay">
       <div className="auth-box">
+        {/* NÚT ĐÓNG */}
         <button className="close-auth" onClick={dong}>
           ×
         </button>
 
+        {/* LOGO */}
+        <div className="auth-logo">
+          <span className="auth-mh">MH</span>
+          <span className="auth-moto"> MOTO</span>
+        </div>
+
+        <div className="auth-line"></div>
+
+        {/* TIÊU ĐỀ */}
         <h2>ĐĂNG NHẬP</h2>
 
-        <p>Chào mừng bạn trở lại MOTO SHOP</p>
+        <p className="auth-subtitle">WELCOME MHMOTO</p>
 
+        {/* FORM ĐĂNG NHẬP */}
         <form onSubmit={xuLyDangNhap}>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="EMAIL CỦA BẠN"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
 
           <input
             type="password"
-            placeholder="Mật khẩu"
+            placeholder="MẬT KHẨU"
             value={matKhau}
             onChange={(e) => setMatKhau(e.target.value)}
           />
 
           <button type="submit" className="auth-submit">
-            ĐĂNG NHẬP
+            Đăng Nhập
           </button>
         </form>
 
+        {/* ĐĂNG KÝ */}
         <div className="auth-change">
           Chưa có tài khoản?
-          <span onClick={sangDangKy}>Đăng ký</span>
+          <span onClick={sangDangKy}> Đăng ký ngay</span>
         </div>
       </div>
     </div>

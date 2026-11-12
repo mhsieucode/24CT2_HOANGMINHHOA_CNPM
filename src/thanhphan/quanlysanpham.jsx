@@ -1,7 +1,61 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 
+// ======================================
+// ĐỊA CHỈ API
+// ======================================
+
 const API = "http://localhost:5000/api/products";
+const SERVER_URL = "http://localhost:5000";
+
+// ======================================
+// DANH SÁCH 4 DANH MỤC SẢN PHẨM
+// ======================================
+
+const DANH_MUC = ["Mũ", "Xe Moto", "Bánh xe", "Phụ tùng xe"];
+
+// ======================================
+// LẤY THÔNG TIN TÀI KHOẢN
+// ======================================
+
+const layTaiKhoan = () => {
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error("Lỗi đọc tài khoản:", error);
+    return null;
+  }
+};
+
+const layUserId = () => {
+  const user = layTaiKhoan();
+  return user?._id || user?.id || "";
+};
+
+// ======================================
+// KIỂM TRA QUYỀN ADMIN
+// ======================================
+
+const kiemTraQuyenAdmin = () => {
+  const user = layTaiKhoan();
+
+  if (!user || !(user._id || user.id)) {
+    alert("Bạn cần đăng nhập để sử dụng chức năng này!");
+    return false;
+  }
+
+  if (user.role !== "admin") {
+    alert("Bạn không có quyền quản lý sản phẩm!");
+    return false;
+  }
+
+  return true;
+};
+
+// ======================================
+// QUẢN LÝ SẢN PHẨM
+// ======================================
 
 function QuanLySanPham({ dong }) {
   const [products, setProducts] = useState([]);
@@ -15,20 +69,45 @@ function QuanLySanPham({ dong }) {
     gia: "",
     moTa: "",
     soLuong: 0,
-    danhMuc: "Xe moto",
+    danhMuc: "Xe Moto",
   });
 
-  // Lấy danh sách sản phẩm
+  // ======================================
+  // LẤY ĐƯỜNG DẪN ẢNH
+  // ======================================
+
+  const layDuongDanAnh = (url) => {
+    if (!url) return "";
+
+    const duongDan = String(url).trim();
+
+    if (duongDan.startsWith("http://") || duongDan.startsWith("https://")) {
+      return duongDan;
+    }
+
+    if (duongDan.startsWith("/")) {
+      return `${SERVER_URL}${duongDan}`;
+    }
+
+    return `${SERVER_URL}/${duongDan}`;
+  };
+
+  // ======================================
+  // LẤY DANH SÁCH SẢN PHẨM
+  // ======================================
+
   const laySanPham = async () => {
     try {
       const response = await fetch(API);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Lỗi tải sản phẩm");
+        throw new Error(data.message || "Lỗi tải sản phẩm!");
       }
 
-      setProducts(Array.isArray(data) ? data : data.products || []);
+      const danhSach = Array.isArray(data) ? data : data.products || [];
+
+      setProducts(danhSach);
     } catch (error) {
       console.error("Lỗi lấy sản phẩm:", error);
       alert("Không thể tải sản phẩm!");
@@ -39,7 +118,10 @@ function QuanLySanPham({ dong }) {
     laySanPham();
   }, []);
 
-  // Nhập dữ liệu
+  // ======================================
+  // NHẬP DỮ LIỆU
+  // ======================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -49,7 +131,10 @@ function QuanLySanPham({ dong }) {
     }));
   };
 
-  // Chọn ảnh từ máy tính
+  // ======================================
+  // CHỌN ẢNH
+  // ======================================
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
 
@@ -70,11 +155,23 @@ function QuanLySanPham({ dong }) {
     setHinhAnh(file);
   };
 
-  // Thêm hoặc cập nhật sản phẩm
+  // ======================================
+  // THÊM HOẶC CẬP NHẬT SẢN PHẨM
+  // ======================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (dangLuu) return;
+
+    if (!kiemTraQuyenAdmin()) return;
+
+    if (!DANH_MUC.includes(form.danhMuc)) {
+      alert("Vui lòng chọn danh mục hợp lệ!");
+      return;
+    }
+
+    const userId = layUserId();
 
     try {
       setDangLuu(true);
@@ -97,23 +194,16 @@ function QuanLySanPham({ dong }) {
 
       const response = await fetch(url, {
         method,
+        headers: {
+          "x-user-id": userId,
+        },
         body: formData,
       });
 
-      const text = await response.text();
-
-      console.log("Backend trả về:", text);
-
-      let data = {};
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
-      }
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Lỗi lưu sản phẩm");
+        throw new Error(data.message || "Lỗi lưu sản phẩm!");
       }
 
       alert(
@@ -132,8 +222,13 @@ function QuanLySanPham({ dong }) {
     }
   };
 
-  // Chọn sản phẩm để sửa
+  // ======================================
+  // CHỌN SẢN PHẨM ĐỂ SỬA
+  // ======================================
+
   const handleEdit = (product) => {
+    if (!kiemTraQuyenAdmin()) return;
+
     setEditingId(product._id);
 
     setForm({
@@ -141,7 +236,7 @@ function QuanLySanPham({ dong }) {
       gia: product.gia ?? "",
       moTa: product.moTa || "",
       soLuong: product.soLuong ?? 0,
-      danhMuc: product.danhMuc || "Xe moto",
+      danhMuc: DANH_MUC.includes(product.danhMuc) ? product.danhMuc : "Xe Moto",
     });
 
     setAnhCu(product.hinhAnh || "");
@@ -153,8 +248,13 @@ function QuanLySanPham({ dong }) {
     });
   };
 
-  // Xóa sản phẩm
+  // ======================================
+  // XÓA SẢN PHẨM
+  // ======================================
+
   const handleDelete = async (id) => {
+    if (!kiemTraQuyenAdmin()) return;
+
     if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
       return;
     }
@@ -162,15 +262,19 @@ function QuanLySanPham({ dong }) {
     try {
       const response = await fetch(`${API}/${id}`, {
         method: "DELETE",
+        headers: {
+          "x-user-id": layUserId(),
+        },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Xóa sản phẩm thất bại");
+        throw new Error(data.message || "Xóa sản phẩm thất bại!");
       }
 
       alert("Xóa sản phẩm thành công!");
+
       await laySanPham();
     } catch (error) {
       console.error("Lỗi xóa sản phẩm:", error);
@@ -178,7 +282,10 @@ function QuanLySanPham({ dong }) {
     }
   };
 
-  // Hủy sửa
+  // ======================================
+  // HỦY SỬA SẢN PHẨM
+  // ======================================
+
   const handleCancel = () => {
     setEditingId(null);
     setHinhAnh(null);
@@ -189,22 +296,14 @@ function QuanLySanPham({ dong }) {
       gia: "",
       moTa: "",
       soLuong: 0,
-      danhMuc: "Xe moto",
+      danhMuc: "Xe Moto",
     });
   };
 
-  // Đường dẫn ảnh
-  const layDuongDanAnh = (url) => {
-    if (!url) return "";
+  // ======================================
+  // ẢNH XEM TRƯỚC
+  // ======================================
 
-    if (url.startsWith("http")) {
-      return url;
-    }
-
-    return `http://localhost:5000${url.startsWith("/") ? "" : "/"}${url}`;
-  };
-
-  // Ảnh xem trước
   const anhXemTruoc = hinhAnh ? URL.createObjectURL(hinhAnh) : "";
 
   useEffect(() => {
@@ -215,6 +314,18 @@ function QuanLySanPham({ dong }) {
     };
   }, [anhXemTruoc]);
 
+  // ======================================
+  // KIỂM TRA TÀI KHOẢN
+  // ======================================
+
+  const user = layTaiKhoan();
+
+  const coQuyenAdmin = user && (user._id || user.id) && user.role === "admin";
+
+  // ======================================
+  // GIAO DIỆN
+  // ======================================
+
   return (
     <div className="quan-ly-san-pham">
       <h1>QUẢN LÝ SẢN PHẨM</h1>
@@ -223,98 +334,142 @@ function QuanLySanPham({ dong }) {
         QUAY LẠI DASHBOARD
       </button>
 
-      <form onSubmit={handleSubmit} className="product-form">
-        <h2>{editingId ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h2>
+      {!coQuyenAdmin && (
+        <div className="thong-bao-quyen">
+          <h3>Bạn không có quyền quản lý sản phẩm!</h3>
+          <p>Vui lòng đăng nhập bằng tài khoản Admin.</p>
+        </div>
+      )}
 
-        <input
-          name="tenSanPham"
-          placeholder="Tên sản phẩm"
-          value={form.tenSanPham}
-          onChange={handleChange}
-          required
-        />
+      {/* FORM SẢN PHẨM */}
 
-        <input
-          name="gia"
-          type="number"
-          placeholder="Giá sản phẩm"
-          value={form.gia}
-          onChange={handleChange}
-          min="0"
-          required
-        />
+      {coQuyenAdmin && (
+        <form onSubmit={handleSubmit} className="product-form">
+          <h2>{editingId ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h2>
 
-        <input
-          name="soLuong"
-          type="number"
-          placeholder="Số lượng"
-          value={form.soLuong}
-          onChange={handleChange}
-          min="0"
-        />
+          {/* TÊN SẢN PHẨM */}
 
-        <input
-          name="danhMuc"
-          placeholder="Danh mục"
-          value={form.danhMuc}
-          onChange={handleChange}
-        />
+          <input
+            name="tenSanPham"
+            placeholder="Tên sản phẩm"
+            value={form.tenSanPham}
+            onChange={handleChange}
+            required
+          />
 
-        <label>Chọn ảnh sản phẩm từ máy tính:</label>
+          {/* GIÁ SẢN PHẨM */}
 
-        <input type="file" accept="image/*" onChange={handleImageChange} />
+          <input
+            name="gia"
+            type="number"
+            placeholder="Giá sản phẩm"
+            value={form.gia}
+            onChange={handleChange}
+            min="0"
+            required
+          />
 
-        {hinhAnh && (
-          <div>
-            <p>Ảnh vừa chọn:</p>
+          {/* SỐ LƯỢNG */}
 
-            <img
-              src={anhXemTruoc}
-              alt="Ảnh xem trước"
-              style={{
-                width: "180px",
-                height: "140px",
-                objectFit: "cover",
-                borderRadius: "8px",
-              }}
-            />
-          </div>
-        )}
+          <input
+            name="soLuong"
+            type="number"
+            placeholder="Số lượng"
+            value={form.soLuong}
+            onChange={handleChange}
+            min="0"
+          />
 
-        {!hinhAnh && anhCu && (
-          <div>
-            <p>Ảnh sản phẩm hiện tại:</p>
+          {/* CHỌN DANH MỤC */}
 
-            <img
-              src={layDuongDanAnh(anhCu)}
-              alt="Ảnh sản phẩm"
-              style={{
-                width: "180px",
-                height: "140px",
-                objectFit: "cover",
-                borderRadius: "8px",
-              }}
-            />
-          </div>
-        )}
+          <label htmlFor="danhMuc">Chọn danh mục sản phẩm:</label>
 
-        <textarea
-          name="moTa"
-          placeholder="Mô tả sản phẩm"
-          value={form.moTa}
-          onChange={handleChange}
-        />
+          <select
+            id="danhMuc"
+            name="danhMuc"
+            value={form.danhMuc}
+            onChange={handleChange}
+            required
+          >
+            {DANH_MUC.map((danhMuc) => (
+              <option key={danhMuc} value={danhMuc}>
+                {danhMuc}
+              </option>
+            ))}
+          </select>
 
-        <button type="submit" disabled={dangLuu}>
-          {dangLuu ? "ĐANG LƯU..." : editingId ? "CẬP NHẬT" : "THÊM SẢN PHẨM"}
-        </button>
+          {/* CHỌN ẢNH */}
 
-        {editingId && (
-          <button type="button" onClick={handleCancel}>
-            HỦY
+          <label>Chọn ảnh sản phẩm từ máy tính:</label>
+
+          <input type="file" accept="image/*" onChange={handleImageChange} />
+
+          {/* ẢNH XEM TRƯỚC */}
+
+          {hinhAnh && (
+            <div className="product-image-preview">
+              <p>Ảnh vừa chọn:</p>
+
+              <img
+                src={anhXemTruoc}
+                alt="Ảnh xem trước"
+                style={{
+                  width: "180px",
+                  height: "140px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            </div>
+          )}
+
+          {/* ẢNH CŨ */}
+
+          {!hinhAnh && anhCu && (
+            <div className="product-image-preview">
+              <p>Ảnh sản phẩm hiện tại:</p>
+
+              <img
+                src={layDuongDanAnh(anhCu)}
+                alt="Ảnh sản phẩm"
+                style={{
+                  width: "180px",
+                  height: "140px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.alt = "Không tải được ảnh";
+                }}
+              />
+            </div>
+          )}
+
+          {/* MÔ TẢ */}
+
+          <textarea
+            name="moTa"
+            placeholder="Mô tả sản phẩm"
+            value={form.moTa}
+            onChange={handleChange}
+          />
+
+          {/* NÚT LƯU */}
+
+          <button type="submit" disabled={dangLuu}>
+            {dangLuu ? "ĐANG LƯU..." : editingId ? "CẬP NHẬT" : "THÊM SẢN PHẨM"}
           </button>
-        )}
-      </form>
+
+          {editingId && (
+            <button type="button" onClick={handleCancel}>
+              HỦY
+            </button>
+          )}
+        </form>
+      )}
+
+      {/* DANH SÁCH SẢN PHẨM */}
 
       <h2>Danh sách sản phẩm</h2>
 
@@ -327,7 +482,7 @@ function QuanLySanPham({ dong }) {
               <th>Giá</th>
               <th>Số lượng</th>
               <th>Danh mục</th>
-              <th>Thao tác</th>
+              {coQuyenAdmin && <th>Thao tác</th>}
             </tr>
           </thead>
 
@@ -344,6 +499,10 @@ function QuanLySanPham({ dong }) {
                         height: "70px",
                         objectFit: "cover",
                       }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.alt = "Ảnh bị lỗi";
+                      }}
                     />
                   ) : (
                     "Chưa có ảnh"
@@ -358,24 +517,26 @@ function QuanLySanPham({ dong }) {
 
                 <td>{product.danhMuc}</td>
 
-                <td>
-                  <button type="button" onClick={() => handleEdit(product)}>
-                    Sửa
-                  </button>
+                {coQuyenAdmin && (
+                  <td>
+                    <button type="button" onClick={() => handleEdit(product)}>
+                      Sửa
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(product._id)}
-                  >
-                    Xóa
-                  </button>
-                </td>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(product._id)}
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
 
             {products.length === 0 && (
               <tr>
-                <td colSpan="6">Chưa có sản phẩm nào</td>
+                <td colSpan={coQuyenAdmin ? "6" : "5"}>Chưa có sản phẩm nào</td>
               </tr>
             )}
           </tbody>

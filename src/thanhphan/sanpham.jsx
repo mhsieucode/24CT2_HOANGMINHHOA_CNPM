@@ -1,106 +1,271 @@
 import { useState, useEffect } from "react";
 
-function SanPham() {
+// ======================================
+// 1. ĐỊA CHỈ API
+// ======================================
+
+const API = "http://localhost:5000/api/products";
+const SERVER_URL = "http://localhost:5000";
+
+// ======================================
+// 2. DANH SÁCH 4 DANH MỤC SẢN PHẨM
+// ======================================
+
+const CAC_DANH_MUC = [
+  {
+    ten: "MŨ",
+    giaTri: "Mũ",
+    banner: "/image/poster20.jpg",
+    collection: "COLLECTION 01",
+  },
+  {
+    ten: "XE MOTO",
+    giaTri: "Xe Moto",
+    banner: "/image/posterxe.jpg",
+    collection: "COLLECTION 02",
+  },
+  {
+    ten: "BÁNH XE",
+    giaTri: "Bánh xe",
+    banner: "/image/posterbanh1.jpg",
+    collection: "COLLECTION 03",
+  },
+  {
+    ten: "PHỤ TÙNG XE",
+    giaTri: "Phụ tùng xe",
+    banner: "/image/poster21.jpg",
+    collection: "COLLECTION 04",
+  },
+];
+
+// ======================================
+// 3. CHUẨN HÓA TÊN DANH MỤC
+// ======================================
+
+const chuanHoaDanhMuc = (ten) => {
+  return String(ten || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .trim();
+};
+
+// ======================================
+// 4. NHẬN DIỆN DANH MỤC CŨ VÀ MỚI
+// ======================================
+
+const layNhomDanhMuc = (ten) => {
+  const danhMuc = chuanHoaDanhMuc(ten);
+
+  // MŨ
+  if (
+    danhMuc === "mu" ||
+    danhMuc === "non" ||
+    danhMuc === "non bao hiem" ||
+    danhMuc === "mu bao hiem"
+  ) {
+    return "Mũ";
+  }
+
+  // XE MOTO
+  if (danhMuc === "moto" || danhMuc === "xe moto" || danhMuc === "xe mo to") {
+    return "Xe Moto";
+  }
+
+  // BÁNH XE
+  if (
+    danhMuc === "banh xe" ||
+    danhMuc === "phu kien moto" ||
+    danhMuc === "phu kien" ||
+    danhMuc === "banh"
+  ) {
+    return "Bánh xe";
+  }
+
+  // PHỤ TÙNG XE
+  if (
+    danhMuc === "phu tung xe" ||
+    danhMuc === "phu tung moto" ||
+    danhMuc === "phut moto" ||
+    danhMuc === "phu tung" ||
+    danhMuc === "ao giap"
+  ) {
+    return "Phụ tùng xe";
+  }
+
+  return "";
+};
+
+// ======================================
+// 5. COMPONENT SẢN PHẨM
+// ======================================
+
+function SanPham({ danhMuc = "", boLocDanhMuc }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-
-  // SẢN PHẨM TỪ MONGODB
   const [sanPhamMongo, setSanPhamMongo] = useState([]);
 
-  // LẤY SẢN PHẨM TỪ BACKEND
-  useEffect(() => {
-    const laySanPham = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/products");
+  // ======================================
+  // 6. LẤY SẢN PHẨM TỪ MONGODB
+  // ======================================
 
-        if (!response.ok) {
-          throw new Error("Không thể lấy sản phẩm");
-        }
+  const laySanPham = async () => {
+    try {
+      const response = await fetch(API);
 
-        const data = await response.json();
-
-        setSanPhamMongo(Array.isArray(data) ? data : data.products || []);
-      } catch (error) {
-        console.error("Lỗi lấy sản phẩm:", error);
+      if (!response.ok) {
+        throw new Error("Không thể lấy sản phẩm");
       }
-    };
 
+      const data = await response.json();
+
+      setSanPhamMongo(Array.isArray(data) ? data : data.products || []);
+    } catch (error) {
+      console.error("Lỗi lấy sản phẩm:", error);
+    }
+  };
+
+  useEffect(() => {
     laySanPham();
   }, []);
 
-  // ĐƯỜNG DẪN HÌNH ẢNH
+  // ======================================
+  // 7. ĐƯỜNG DẪN HÌNH ẢNH SẢN PHẨM
+  // ======================================
+
   const layDuongDanAnh = (url) => {
     if (!url) return "/image/fullface1.jpg";
 
-    if (url.startsWith("http")) return url;
+    const duongDan = String(url).trim();
 
-    return `http://localhost:5000${url}`;
+    if (duongDan.startsWith("http://") || duongDan.startsWith("https://")) {
+      return duongDan;
+    }
+
+    if (duongDan.startsWith("/")) {
+      return `${SERVER_URL}${duongDan}`;
+    }
+
+    return `${SERVER_URL}/${duongDan}`;
   };
 
-  // ĐỊNH DẠNG GIÁ
+  // ======================================
+  // 8. ĐỊNH DẠNG GIÁ
+  // ======================================
+
   const dinhDangGia = (gia) => {
     return Number(gia).toLocaleString("vi-VN") + "đ";
   };
 
-  // MỞ CHI TIẾT SẢN PHẨM
+  // ======================================
+  // 9. MỞ CHI TIẾT SẢN PHẨM
+  // ======================================
+
   const openDetail = (product) => {
     setSelectedProduct(product);
     setQuantity(1);
   };
 
-  // ĐÓNG CHI TIẾT
+  // ======================================
+  // 10. ĐÓNG CHI TIẾT SẢN PHẨM
+  // ======================================
+
   const closeDetail = () => {
     setSelectedProduct(null);
   };
 
-  // TĂNG GIẢM SỐ LƯỢNG
+  // ======================================
+  // 11. THÊM SẢN PHẨM VÀO GIỎ HÀNG
+  // ======================================
+
+  const themVaoGioHang = () => {
+    if (!selectedProduct) return;
+
+    const gioHang = JSON.parse(localStorage.getItem("gioHang") || "[]");
+
+    const id = selectedProduct._id;
+    const gia = Number(selectedProduct.gia);
+    const soLuongKho = Number(selectedProduct.soLuong || 0);
+
+    if (!id) {
+      alert("Không xác định được sản phẩm!");
+      return;
+    }
+
+    if (quantity > soLuongKho) {
+      alert("Số lượng sản phẩm trong kho không đủ!");
+      return;
+    }
+
+    const sanPhamCu = gioHang.find((item) => String(item.id) === String(id));
+
+    if (sanPhamCu) {
+      if (sanPhamCu.soLuong + quantity > soLuongKho) {
+        alert("Số lượng sản phẩm trong kho không đủ!");
+        return;
+      }
+
+      sanPhamCu.soLuong += quantity;
+    } else {
+      gioHang.push({
+        id: id,
+        tenSanPham: selectedProduct.tenSanPham,
+        hinhAnh: selectedProduct.hinhAnh,
+        gia: gia,
+        soLuong: quantity,
+        danhMuc: layNhomDanhMuc(selectedProduct.danhMuc),
+      });
+    }
+
+    localStorage.setItem("gioHang", JSON.stringify(gioHang));
+
+    alert("Đã thêm sản phẩm vào giỏ hàng!");
+
+    closeDetail();
+  };
+
+  // ======================================
+  // 12. TĂNG GIẢM SỐ LƯỢNG
+  // ======================================
+
   const increaseQuantity = () => {
-    setQuantity((prev) => prev + 1);
+    if (quantity < Number(selectedProduct?.soLuong || 0)) {
+      setQuantity((prev) => prev + 1);
+    } else {
+      alert("Số lượng trong kho không đủ!");
+    }
   };
 
   const decreaseQuantity = () => {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
-  // HIỂN THỊ SẢN PHẨM
-  const ProductCard = ({
-    image,
-    name,
-    price,
-    category,
-    number,
-    hot = false,
-    product,
-  }) => {
+  // ======================================
+  // 13. HIỂN THỊ MỘT SẢN PHẨM
+  // ======================================
+
+  const ProductCard = ({ product, index }) => {
     return (
       <div className="product-card">
+        {/* HÌNH ẢNH SẢN PHẨM */}
         <div className="product-image">
-          <img src={image} alt={name} />
+          <img src={layDuongDanAnh(product.hinhAnh)} alt={product.tenSanPham} />
 
-          <span className="product-number">{number}</span>
-
-          {hot && <span className="sale">HOT</span>}
+          <span className="product-number">
+            {String(index + 1).padStart(2, "0")}
+          </span>
         </div>
 
+        {/* THÔNG TIN SẢN PHẨM */}
         <div className="product-info">
-          <small>{category}</small>
+          <small>{layNhomDanhMuc(product.danhMuc) || product.danhMuc}</small>
 
-          <h3>{name}</h3>
+          <h3>{product.tenSanPham}</h3>
 
-          <p>{price}</p>
+          <p>{dinhDangGia(product.gia)}</p>
 
-          <button
-            onClick={() =>
-              openDetail({
-                image,
-                name,
-                price,
-                category,
-                moTa: product?.moTa || "",
-                soLuong: product?.soLuong ?? 0,
-              })
-            }
-          >
+          <button type="button" onClick={() => openDetail(product)}>
             CHI TIẾT →
           </button>
         </div>
@@ -108,276 +273,145 @@ function SanPham() {
     );
   };
 
+  // ======================================
+  // 14. LỌC SẢN PHẨM THEO DANH MỤC
+  // ======================================
+
+  const nhomDangChon = layNhomDanhMuc(danhMuc);
+
+  // LẤY POSTER CỦA DANH MỤC ĐANG CHỌN
+  const nhomDuocChon = CAC_DANH_MUC.find(
+    (nhom) => nhom.giaTri === nhomDangChon
+  );
+
+  // LỌC SẢN PHẨM
+  const sanPhamDuocChon = nhomDangChon
+    ? sanPhamMongo.filter(
+        (product) => layNhomDanhMuc(product.danhMuc) === nhomDangChon
+      )
+    : sanPhamMongo;
+
+  // ======================================
+  // 15. GIAO DIỆN SẢN PHẨM
+  // ======================================
+
   return (
     <>
       <section className="products" id="sanpham">
-        {/* SẢN PHẨM NỔI BẬT */}
+        {/* TIÊU ĐỀ DANH MỤC */}
         <div className="section-title">
-          <span>SẢN PHẨM MOTO</span>
-          <h2>Sản phẩm nổi bật 🔥</h2>
-          <p>Những sản phẩm được yêu thích nhất dành cho Biker</p>
+          <span>MH MOTO SHOP</span>
+
+          <h2>
+            {nhomDangChon ? nhomDangChon.toUpperCase() : "TẤT CẢ SẢN PHẨM"}
+          </h2>
+
+          <p>
+            {nhomDangChon
+              ? `Khám phá các sản phẩm thuộc ${nhomDangChon}`
+              : "Những sản phẩm dành cho người đam mê Moto"}
+          </p>
+
+          {nhomDangChon && (
+            <button type="button" onClick={boLocDanhMuc}>
+              ← XEM TẤT CẢ SẢN PHẨM
+            </button>
+          )}
         </div>
 
-        <div className="product-grid">
-          <ProductCard
-            image="/image/fullface1.jpg"
-            name="FULLFACE 1"
-            price="750.000đ"
-            category="MŨ BẢO HIỂM"
-            number="01"
-            hot={true}
-          />
+        {/* ==================================
+            KHI NGƯỜI DÙNG CHỌN DANH MỤC
+        ================================== */}
 
-          <ProductCard
-            image="/image/chan3.jpg"
-            name="GIÁP BẢO HỘ CHÂN"
-            price="1.150.000đ"
-            category="GIÁP BẢO HỘ"
-            number="02"
-          />
-
-          <ProductCard
-            image="/image/tay2.jpg"
-            name="GĂNG TAY BẢO HỘ"
-            price="1.000.000đ"
-            category="PHỤ KIỆN MOTO"
-            number="03"
-          />
-
-          <ProductCard
-            image="/image/ao1.jpg"
-            name="JACKET"
-            price="1.500.000đ"
-            category="ÁO MOTO"
-            number="04"
-          />
-        </div>
-
-        {/* SẢN PHẨM MỚI TỪ ADMIN */}
-        {sanPhamMongo.length > 0 && (
+        {nhomDangChon ? (
           <div className="category-product">
-            <div className="section-title">
-              <span>MOTO SHOP</span>
-              <h2>Sản phẩm mới 🆕</h2>
-              <p>Những sản phẩm vừa được thêm vào cửa hàng</p>
+            {/* POSTER BÊN TRÁI */}
+            <div className="product-banner">
+              <img src={nhomDuocChon?.banner} alt={nhomDuocChon?.ten} />
+
+              <div className="banner-content">
+                <span>{nhomDuocChon?.collection}</span>
+                <h2>{nhomDuocChon?.ten}</h2>
+              </div>
             </div>
 
+            {/* SẢN PHẨM BÊN PHẢI */}
             <div className="product-grid">
-              {sanPhamMongo.map((product, index) => (
+              {sanPhamDuocChon.map((product, index) => (
                 <ProductCard
                   key={product._id}
                   product={product}
-                  image={layDuongDanAnh(product.hinhAnh)}
-                  name={product.tenSanPham}
-                  price={dinhDangGia(product.gia)}
-                  category={product.danhMuc || "Sản phẩm Moto"}
-                  number={String(index + 1).padStart(2, "0")}
+                  index={index}
                 />
               ))}
             </div>
+
+            {/* KHÔNG CÓ SẢN PHẨM */}
+            {sanPhamDuocChon.length === 0 && <p className="empty-product"></p>}
           </div>
+        ) : (
+          /* ==================================
+             KHI HIỂN THỊ TẤT CẢ DANH MỤC
+          ================================== */
+
+          CAC_DANH_MUC.map((nhom) => {
+            const danhSach = sanPhamMongo.filter(
+              (product) => layNhomDanhMuc(product.danhMuc) === nhom.giaTri
+            );
+
+            return (
+              <div className="category-product" key={nhom.giaTri}>
+                {/* POSTER DANH MỤC BÊN TRÁI */}
+                <div className="product-banner">
+                  <img src={nhom.banner} alt={nhom.ten} />
+
+                  <div className="banner-content">
+                    <span>{nhom.collection}</span>
+                    <h2>{nhom.ten}</h2>
+                  </div>
+                </div>
+
+                {/* SẢN PHẨM BÊN PHẢI */}
+                <div className="product-grid">
+                  {danhSach.map((product, index) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                {/* THÔNG BÁO KHI DANH MỤC TRỐNG */}
+                {danhSach.length === 0 && <p className="empty-product"></p>}
+              </div>
+            );
+          })
         )}
-
-        {/* NÓN BẢO HIỂM */}
-        <div className="category-product">
-          <div className="product-banner">
-            <img src="/image/poster20.jpg" alt="Nón bảo hiểm" />
-
-            <div className="banner-content">
-              <span>COLLECTION 01</span>
-              <h2>NÓN BẢO HIỂM</h2>
-              <p>Bảo vệ an toàn - Phong cách mạnh mẽ</p>
-            </div>
-          </div>
-
-          <div className="category-heading"></div>
-
-          <div className="product-grid">
-            <ProductCard
-              image="/image/fullface1.jpg"
-              name="FULLFACE 1"
-              price="750.000đ"
-              category="FULLFACE"
-              number="01"
-            />
-            <ProductCard
-              image="/image/fullface2.jpg"
-              name="FULLFACE 2"
-              price="850.000đ"
-              category="FULLFACE"
-              number="02"
-            />
-            <ProductCard
-              image="/image/fullface3.jpg"
-              name="FULLFACE 3"
-              price="850.000đ"
-              category="FULLFACE"
-              number="03"
-            />
-            <ProductCard
-              image="/image/fullface4.jpg"
-              name="FULLFACE 4"
-              price="850.000đ"
-              category="FULLFACE"
-              number="04"
-            />
-          </div>
-        </div>
-
-        {/* ÁO MÔ TÔ */}
-        <div className="category-product">
-          <div className="product-banner">
-            <img src="/image/poster18.jpg" alt="Áo mô tô" />
-
-            <div className="banner-content">
-              <span>COLLECTION 02</span>
-              <h2>ÁO MÔ TÔ</h2>
-              <p>Phong cách mạnh mẽ cho mọi hành trình</p>
-            </div>
-          </div>
-
-          <div className="category-heading"></div>
-
-          <div className="product-grid">
-            <ProductCard
-              image="/image/ao4.jpg"
-              name="JACKET 1"
-              price="1.500.000đ"
-              category="JACKET"
-              number="01"
-            />
-            <ProductCard
-              image="/image/ao6.jpg"
-              name="JACKET 2"
-              price="1.500.000đ"
-              category="JACKET"
-              number="02"
-            />
-            <ProductCard
-              image="/image/ao7.jpg"
-              name="JACKET 3"
-              price="1.500.000đ"
-              category="JACKET"
-              number="03"
-            />
-            <ProductCard
-              image="/image/ao5.jpg"
-              name="JACKET 4"
-              price="1.700.000đ"
-              category="JACKET"
-              number="04"
-            />
-          </div>
-        </div>
-
-        {/* GIÁP BẢO HỘ */}
-        <div className="category-product">
-          <div className="product-banner">
-            <img src="/image/poster21.jpg" alt="Giáp bảo hộ" />
-
-            <div className="banner-content">
-              <span>COLLECTION 03</span>
-              <h2>GIÁP BẢO HỘ</h2>
-              <p>Bảo vệ tối đa cho những chuyến đi</p>
-            </div>
-          </div>
-
-          <div className="category-heading"></div>
-
-          <div className="product-grid">
-            <ProductCard
-              image="/image/chan3.jpg"
-              name="GIÁP BẢO HỘ CHÂN 1"
-              price="1.150.000đ"
-              category="GIÁP BẢO HỘ"
-              number="01"
-            />
-            <ProductCard
-              image="/image/chan2.jpg"
-              name="GIÁP BẢO HỘ CHÂN 2"
-              price="1.150.000đ"
-              category="GIÁP BẢO HỘ"
-              number="02"
-            />
-            <ProductCard
-              image="/image/chan7.jpg"
-              name="GIÁP BẢO HỘ CHÂN 3"
-              price="1.150.000đ"
-              category="GIÁP BẢO HỘ"
-              number="03"
-            />
-            <ProductCard
-              image="/image/chan4.jpg"
-              name="GIÁP BẢO HỘ CHÂN 4"
-              price="1.300.000đ"
-              category="GIÁP BẢO HỘ"
-              number="04"
-            />
-          </div>
-        </div>
-
-        {/* PHỤ KIỆN */}
-        <div className="category-product">
-          <div className="product-banner">
-            <img src="/image/poster21.png" alt="Phụ kiện Moto" />
-
-            <div className="banner-content">
-              <span>COLLECTION 04</span>
-              <h2>PHỤ KIỆN MOTO</h2>
-              <p>Hoàn thiện phong cách cho chiếc Moto của bạn</p>
-            </div>
-          </div>
-
-          <div className="category-heading"></div>
-
-          <div className="product-grid">
-            <ProductCard
-              image="/image/phukien3.jpg"
-              name="BÁNH 1"
-              price="1.500.000đ"
-              category="PHỤ KIỆN"
-              number="01"
-            />
-            <ProductCard
-              image="/image/phukien4.jpg"
-              name="BÁNH 2"
-              price="1.500.000đ"
-              category="PHỤ KIỆN"
-              number="02"
-            />
-            <ProductCard
-              image="/image/phukien5.jpg"
-              name="BÁNH 3"
-              price="1.500.000đ"
-              category="PHỤ KIỆN"
-              number="03"
-            />
-            <ProductCard
-              image="/image/phukien6.jpg"
-              name="BÁNH 4"
-              price="1.700.000đ"
-              category="PHỤ KIỆN"
-              number="04"
-            />
-          </div>
-        </div>
       </section>
 
-      {/* POPUP CHI TIẾT SẢN PHẨ */}
+      {/* ======================================
+          16. POPUP CHI TIẾT SẢN PHẨM
+      ====================================== */}
+
       {selectedProduct && (
         <div className="product-detail-overlay" onClick={closeDetail}>
           <div
             className="product-detail-modal"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* NÚT ĐÓNG */}
             <button className="detail-close" onClick={closeDetail}>
               ×
             </button>
 
-            {/* HÌNH SẢN PHẨ */}
+            {/* HÌNH ẢNH SẢN PHẨM */}
             <div className="detail-product-left">
               <div className="detail-product-image">
-                <img src={selectedProduct.image} alt={selectedProduct.name} />
+                <img
+                  src={layDuongDanAnh(selectedProduct.hinhAnh)}
+                  alt={selectedProduct.tenSanPham}
+                />
               </div>
 
               <div className="detail-dots">
@@ -390,37 +424,46 @@ function SanPham() {
 
             {/* THÔNG TIN SẢN PHẨM */}
             <div className="detail-product-info">
-              <span className="detail-status">● CÒN HÀNG</span>
-
-              <span className="detail-category">
-                {selectedProduct.category}
+              <span className="detail-status">
+                ● {selectedProduct.soLuong > 0 ? "CÒN HÀNG" : "HẾT HÀNG"}
               </span>
 
-              <h2>{selectedProduct.name}</h2>
+              <span className="detail-category">
+                {layNhomDanhMuc(selectedProduct.danhMuc) ||
+                  selectedProduct.danhMuc}
+              </span>
+
+              <h2>{selectedProduct.tenSanPham}</h2>
 
               <p className="detail-description">
                 {selectedProduct.moTa ||
-                  "Sản phẩm chất lượng cao dành cho Biker, thiết kế mạnh mẽ, chắc chắn và phù hợp cho những chuyến đi đường dài."}
+                  "Sản phẩm chất lượng cao dành cho Biker, thiết kế mạnh mẽ và chắc chắn."}
               </p>
 
-              <div className="detail-price">{selectedProduct.price}</div>
+              <div className="detail-price">
+                {dinhDangGia(selectedProduct.gia)}
+              </div>
 
               <div className="detail-line"></div>
 
+              {/* THÔNG SỐ SẢN PHẨM */}
               <div className="detail-spec">
                 <div>
                   <span>Hãng</span>
-                  <strong>MOTO SHOP</strong>
+                  <strong>MH MOTO</strong>
                 </div>
 
                 <div>
-                  <span>Dòng sản phẩm</span>
-                  <strong>{selectedProduct.category}</strong>
+                  <span>Danh mục</span>
+                  <strong>
+                    {layNhomDanhMuc(selectedProduct.danhMuc) ||
+                      selectedProduct.danhMuc}
+                  </strong>
                 </div>
 
                 <div>
-                  <span>Chất liệu</span>
-                  <strong>Cao cấp</strong>
+                  <span>Số lượng còn</span>
+                  <strong>{selectedProduct.soLuong}</strong>
                 </div>
 
                 <div>
@@ -431,24 +474,43 @@ function SanPham() {
                 </div>
               </div>
 
-              {/* SỐ LƯỢNG */}
+              {/* CHỌN SỐ LƯỢNG */}
               <div className="detail-quantity">
                 <span>Số lượng</span>
 
                 <div className="quantity-box">
-                  <button onClick={decreaseQuantity}>−</button>
+                  <button type="button" onClick={decreaseQuantity}>
+                    −
+                  </button>
 
                   <span>{quantity}</span>
 
-                  <button onClick={increaseQuantity}>+</button>
+                  <button type="button" onClick={increaseQuantity}>
+                    +
+                  </button>
                 </div>
               </div>
 
-              {/* BUTTON */}
+              {/* NÚT MUA HÀNG */}
               <div className="detail-buttons">
-                <button className="detail-cart-button">🛒 THÊM VÀO GIỎ</button>
+                <button
+                  className="detail-cart-button"
+                  onClick={themVaoGioHang}
+                  disabled={Number(selectedProduct.soLuong) <= 0}
+                >
+                  🛒 THÊM VÀO GIỎ
+                </button>
 
-                <button className="detail-buy-button">MUA NGAY</button>
+                <button
+                  className="detail-buy-button"
+                  onClick={() =>
+                    alert(
+                      "Bạn có thể thêm sản phẩm vào giỏ hàng để tiếp tục mua!"
+                    )
+                  }
+                >
+                  MUA NGAY
+                </button>
               </div>
             </div>
           </div>

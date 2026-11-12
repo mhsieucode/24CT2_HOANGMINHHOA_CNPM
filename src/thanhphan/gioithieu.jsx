@@ -3,39 +3,36 @@ function GioiThieu() {
     <section className="about" id="gioithieu">
       {/* TIÊU ĐỀ */}
       <div className="about-title">
-        <span>🏍️</span>
         <h2>VỀ MOTO SHOP</h2>
-        <span>🏍️</span>
       </div>
 
       {/* NỘI DUNG CHÍNH */}
       <div className="about-container">
         {/* ẢNH */}
         <div className="about-image">
-          <img src="/image/BGR.jpg" alt="Moto Shop" />
+          <img src="/image/logo1.jpg" alt="Moto Shop" />
         </div>
 
         {/* NỘI DUNG */}
         <div className="about-content">
-          <h3>ĐAM MÊ TỐC ĐỘ - ĐỒNG HÀNH CÙNG BIKER</h3>
-
           <p>
-            <strong>MOTO SHOP</strong> là cửa hàng chuyên cung cấp các sản phẩm
-            và phụ kiện dành cho người yêu mô tô, xe máy và cộng đồng biker.
+            <strong>MH MOTO</strong> – điểm đến dành cho những tín đồ đam mê tốc
+            độ, yêu thích sự mạnh mẽ và phong cách của những chiếc xe moto.
           </p>
 
           <p>
-            Chúng tôi cung cấp đa dạng sản phẩm từ
+            Chúng tôi mang đến đa dạng sản phẩm từ
             <strong>
               {" "}
-              nón bảo hiểm, áo mô tô, giáp bảo hộ, găng tay, phụ kiện
-            </strong>{" "}
-            và nhiều sản phẩm dành cho người đi mô tô.
+              xe moto, nón bảo hiểm, áo moto, giáp bảo hộ, phụ tùng, bánh xe{" "}
+            </strong>
+            và các phụ kiện chất lượng dành cho mọi biker.
           </p>
 
           <p>
-            MOTO SHOP luôn hướng đến chất lượng sản phẩm, giá cả hợp lý và mang
-            đến trải nghiệm mua sắm tốt nhất cho khách hàng.
+            <strong>MH MOTO</strong> không chỉ là nơi mua sắm, mà còn là nơi
+            khơi nguồn đam mê, khẳng định cá tính và đồng hành cùng bạn trên mọi
+            cung đường.
           </p>
 
           <button className="about-button">KHÁM PHÁ SẢN PHẨM</button>

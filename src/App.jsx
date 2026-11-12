@@ -17,19 +17,51 @@ import Admin from "./thanhphan/admin";
 import NhanVien from "./thanhphan/nhanvien";
 import GioHang from "./thanhphan/giohang";
 import QuanLySanPham from "./thanhphan/quanlysanpham";
+import QuanLyDonHang from "./thanhphan/quanlydonhang";
 
 function App() {
+  // ======================================
   // HIỂN THỊ POPUP
+  // ======================================
+
   const [hienDangNhap, setHienDangNhap] = useState(false);
   const [hienDangKy, setHienDangKy] = useState(false);
 
+  // ======================================
   // HIỂN THỊ GIỎ HÀNG
+  // ======================================
+
   const [hienGioHang, setHienGioHang] = useState(false);
 
+  // ======================================
   // HIỂN THỊ QUẢN LÝ SẢN PHẨM
+  // ======================================
+
   const [hienQuanLySanPham, setHienQuanLySanPham] = useState(false);
 
+  // ======================================
+  // LỌC SẢN PHẨM THEO DANH MỤC
+  // ======================================
+
+  const [danhMucDangChon, setDanhMucDangChon] = useState("");
+
+  const chonDanhMuc = (danhMuc) => {
+    setDanhMucDangChon(danhMuc);
+
+    setHienGioHang(false);
+
+    setTimeout(() => {
+      document.getElementById("sanpham")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  // ======================================
   // KIỂM TRA USER ĐÃ ĐĂNG NHẬP
+  // ======================================
+
   const [user, setUser] = useState(() => {
     const userDaLuu = localStorage.getItem("user");
 
@@ -44,7 +76,10 @@ function App() {
     return null;
   });
 
+  // ======================================
   // ĐĂNG XUẤT
+  // ======================================
+
   const xuLyDangXuat = () => {
     localStorage.removeItem("user");
     setUser(null);
@@ -53,12 +88,18 @@ function App() {
     alert("Đã đăng xuất!");
   };
 
+  // ======================================
   // ĐÓNG GIỎ HÀNG
+  // ======================================
+
   const dongGioHang = () => {
     setHienGioHang(false);
   };
 
+  // ======================================
   // MỞ GIỎ HÀNG
+  // ======================================
+
   const moGioHang = () => {
     setHienGioHang(true);
   };
@@ -66,12 +107,11 @@ function App() {
   return (
     <div className="web-layout">
       {/* ADMIN */}
+
       {user?.role === "admin" ? (
         hienQuanLySanPham ? (
-          // MÀN HÌNH QUẢN LÝ SẢN PHẨM
           <QuanLySanPham dong={() => setHienQuanLySanPham(false)} />
         ) : (
-          // MÀN HÌNH ADMIN DASHBOARD
           <Admin
             user={user}
             dangXuat={xuLyDangXuat}
@@ -79,15 +119,18 @@ function App() {
           />
         )
       ) : user?.role === "staff" ? (
-        // NHÂN VIÊN
+        /* NHÂN VIÊN */
+
         <NhanVien user={user} dangXuat={xuLyDangXuat} />
       ) : (
-        // KHÁCH HÀNG / CHƯA ĐĂNG NHẬP
+        /* KHÁCH HÀNG / CHƯA ĐĂNG NHẬP */
+
         <>
           <Poster />
 
           <div className="page">
             {/* HEADER */}
+
             <DauTrang
               user={user}
               setHienDangNhap={setHienDangNhap}
@@ -98,24 +141,37 @@ function App() {
             />
 
             {/* NỘI DUNG WEBSITE */}
+
             {hienGioHang ? (
               <GioHang dong={dongGioHang} />
             ) : (
               <>
+                {/* TRANG CHỦ VÀ DANH MỤC */}
+
                 <div id="trangchu">
                   <TrinhChieu />
-                  <DanhMuc />
+
+                  <DanhMuc onChonDanhMuc={chonDanhMuc} />
                 </div>
 
+                {/* DANH SÁCH SẢN PHẨM */}
+
                 <div id="sanpham">
-                  <SanPham />
+                  <SanPham
+                    danhMuc={danhMucDangChon}
+                    boLocDanhMuc={() => setDanhMucDangChon("")}
+                  />
                 </div>
+
+                {/* GIỚI THIỆU */}
 
                 <div id="gioithieu">
                   <GioiThieu />
                 </div>
 
                 <DanhGia />
+
+                {/* CHÂN TRANG */}
 
                 <div id="lienhe">
                   <ChanTrang />
@@ -125,6 +181,7 @@ function App() {
           </div>
 
           {/* POPUP ĐĂNG NHẬP */}
+
           {hienDangNhap && (
             <DangNhap
               dong={() => setHienDangNhap(false)}
@@ -146,6 +203,7 @@ function App() {
           )}
 
           {/* POPUP ĐĂNG KÝ */}
+
           {hienDangKy && (
             <DangKy
               dong={() => setHienDangKy(false)}

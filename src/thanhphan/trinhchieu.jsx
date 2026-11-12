@@ -4,7 +4,7 @@ function TrinhChieu() {
       {/* VIDEO BANNER MCQUEEN */}
       <video
         className="banner-video"
-        src="/videos/banner.mp4"
+        src="/videos/videoqueen.mp4"
         autoPlay
         muted
         loop

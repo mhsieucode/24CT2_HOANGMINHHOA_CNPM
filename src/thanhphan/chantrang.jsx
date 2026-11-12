@@ -4,7 +4,7 @@ function ChanTrang() {
       {/* LOGO + GIỚI THIỆU */}
       <div className="footer-top">
         <div className="footer-brand">
-          <h2>🏍️ MOTO SHOP</h2>
+          <h2>MH MOTO</h2>
           <p>Đam mê tốc độ - Đồng hành cùng biker.</p>
         </div>
 
@@ -13,8 +13,8 @@ function ChanTrang() {
           <h3>THÔNG TIN</h3>
           <p>📍 Đà Nẵng, Việt Nam</p>
           <p>🕐 08:00 - 22:00</p>
-          <p>📞 0905 123 456</p>
-          <p>📧 motoshop@gmail.com</p>
+          <p>📞 0923117504</p>
+          <p>📧 mhmoto@gmail.com</p>
         </div>
 
         {/* LIÊN KẾT */}
@@ -31,7 +31,7 @@ function ChanTrang() {
       <div className="contact-media">
         <div className="contact-photo">
           <h3>📸 MOTO SHOP</h3>
-          <img src="/image/bgr.jpg" alt="Moto Shop" />
+          <img src="/image/logo1.jpg" alt="Moto Shop" />
         </div>
 
         <div className="contact-map">
@@ -46,7 +46,7 @@ function ChanTrang() {
 
       {/* FOOTER CUỐI */}
       <div className="footer-bottom">
-        <span>© 2026 MOTO SHOP</span>
+        <span>© 2026 MH MOTO SHOP</span>
         <span>Website bán xe & phụ kiện mô tô</span>
       </div>
     </footer>
