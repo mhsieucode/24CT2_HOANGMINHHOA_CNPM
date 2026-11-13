@@ -2,17 +2,39 @@ import { useEffect, useState } from "react";
 import QuanLyDonHang from "./quanlydonhang";
 
 function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
+  // ======================================
+  // QUẢN LÝ TÀI KHOẢN
+  // ======================================
+
   const [danhSachUser, setDanhSachUser] = useState([]);
   const [dangTai, setDangTai] = useState(false);
 
+  // ======================================
+  // QUẢN LÝ ĐƠN HÀNG
+  // ======================================
+
   const [hienQuanLyDonHang, setHienQuanLyDonHang] = useState(false);
 
-  // ID tài khoản đang đăng nhập
+  // ======================================
+  // QUẢN LÝ THỐNG KÊ
+  // ======================================
+
+  const [hienThongKe, setHienThongKe] = useState(false);
+  const [dangTaiThongKe, setDangTaiThongKe] = useState(false);
+  const [loiThongKe, setLoiThongKe] = useState("");
+
+  const [thongKe, setThongKe] = useState({
+    tongDoanhThu: 0,
+    soLuongSanPham: 0,
+    soLuongBaiDang: 0,
+  });
+
+  // ID TÀI KHOẢN ĐANG ĐĂNG NHẬP
   const userId = String(user?.id || user?._id || "");
 
-  // =========================
+  // ======================================
   // LẤY DANH SÁCH TÀI KHOẢN
-  // =========================
+  // ======================================
 
   const layDanhSachUser = async () => {
     if (!userId) {
@@ -45,15 +67,78 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
     }
   };
 
+  // ======================================
+  // LẤY DỮ LIỆU THỐNG KÊ TỪ BACKEND
+  // ======================================
+
+  const layThongKe = async () => {
+    if (!userId) {
+      setLoiThongKe("Không tìm thấy thông tin tài khoản Admin!");
+      return;
+    }
+
+    try {
+      setDangTaiThongKe(true);
+      setLoiThongKe("");
+
+      const response = await fetch("http://localhost:5000/api/admin/thong-ke", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": userId,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể lấy dữ liệu thống kê!");
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || "Lấy dữ liệu thống kê thất bại!");
+      }
+
+      setThongKe({
+        tongDoanhThu: Number(data.tongDoanhThu) || 0,
+        soLuongSanPham: Number(data.soLuongSanPham) || 0,
+        soLuongBaiDang: Number(data.soLuongBaiDang) || 0,
+      });
+    } catch (error) {
+      console.error("Lỗi lấy thống kê:", error);
+      setLoiThongKe(error.message || "Không thể kết nối đến server!");
+    } finally {
+      setDangTaiThongKe(false);
+    }
+  };
+
+  // ======================================
+  // MỞ / ĐÓNG THỐNG KÊ
+  // ======================================
+
+  const moThongKe = async () => {
+    const trangThaiMoi = !hienThongKe;
+
+    setHienThongKe(trangThaiMoi);
+
+    if (trangThaiMoi) {
+      await layThongKe();
+    }
+  };
+
+  // ======================================
+  // TỰ ĐỘNG LẤY DANH SÁCH TÀI KHOẢN
+  // ======================================
+
   useEffect(() => {
     if (userId) {
       layDanhSachUser();
     }
   }, [userId]);
 
-  // =========================
+  // ======================================
   // ĐỔI QUYỀN TÀI KHOẢN
-  // =========================
+  // ======================================
 
   const doiQuyen = async (id, roleMoi) => {
     if (!userId) {
@@ -65,7 +150,7 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
       (item) => String(item._id) === String(id)
     );
 
-    // Không cho admin tự hạ quyền
+    // KHÔNG CHO ADMIN TỰ HẠ QUYỀN
     if (
       String(id) === userId &&
       taiKhoanDangSua?.role === "admin" &&
@@ -108,9 +193,9 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
     }
   };
 
-  // =========================
+  // ======================================
   // XÓA TÀI KHOẢN
-  // =========================
+  // ======================================
 
   const xoaUser = async (id, hoTen) => {
     if (!userId) {
@@ -156,9 +241,9 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
     }
   };
 
-  // =========================
+  // ======================================
   // HIỂN THỊ QUYỀN
-  // =========================
+  // ======================================
 
   const hienThiRole = (role) => {
     if (role === "admin") return "ADMIN";
@@ -167,16 +252,16 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
     return "KHÁCH HÀNG";
   };
 
-  // =========================
+  // ======================================
   // GIAO DIỆN ADMIN
-  // =========================
+  // ======================================
 
   return (
     <div className="admin-page">
       {/* HEADER */}
       <div className="admin-header">
         <div>
-          <h1>ADMIN DASHBOARD</h1>
+          <h1>ADMIN</h1>
 
           <p>
             Xin chào, <strong>{user?.hoTen || "Admin"}</strong>
@@ -192,6 +277,7 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
 
       {/* MENU ADMIN */}
       <div className="admin-menu">
+        {/* QUẢN LÝ TÀI KHOẢN */}
         <div className="admin-card">
           <div className="admin-icon">👤</div>
 
@@ -200,6 +286,7 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
           <p>Quản lý khách hàng, nhân viên và tài khoản hệ thống.</p>
         </div>
 
+        {/* QUẢN LÝ SẢN PHẨM */}
         <div className="admin-card">
           <div className="admin-icon">📦</div>
 
@@ -210,6 +297,7 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
           <button onClick={dongMoQuanLySanPham}>QUẢN LÝ</button>
         </div>
 
+        {/* QUẢN LÝ ĐƠN HÀNG */}
         <div className="admin-card">
           <div className="admin-icon">🛒</div>
 
@@ -222,26 +310,107 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
           </button>
         </div>
 
+        {/* THỐNG KÊ */}
         <div className="admin-card">
           <div className="admin-icon">📊</div>
 
           <h2>Thống kê</h2>
 
-          <p>Xem doanh thu và tình hình hoạt động.</p>
+          <p>Xem tổng doanh thu, số lượng sản phẩm và bài đăng.</p>
 
-          <button onClick={() => alert("Bạn cần kết nối chức năng thống kê!")}>
-            XEM THỐNG KÊ
+          <button onClick={moThongKe}>
+            {hienThongKe ? "ĐÓNG THỐNG KÊ" : "XEM THỐNG KÊ"}
           </button>
         </div>
       </div>
-      {/* QUẢN LÝ ĐƠN HÀNG */}
+
+      {/* ======================================
+          KHU VỰC THỐNG KÊ
+      ====================================== */}
+
+      {hienThongKe && (
+        <div className="admin-statistics">
+          <div className="admin-statistics-header">
+            <div>
+              <h2>THỐNG KÊ WEBSITE MH MOTO</h2>
+              <p>Tổng hợp dữ liệu hoạt động của website.</p>
+            </div>
+
+            <button
+              className="admin-refresh"
+              onClick={layThongKe}
+              disabled={dangTaiThongKe}
+            >
+              {dangTaiThongKe ? "ĐANG TẢI..." : "🔄 LÀM MỚI"}
+            </button>
+          </div>
+
+          {dangTaiThongKe ? (
+            <div className="admin-loading">Đang tải dữ liệu thống kê...</div>
+          ) : loiThongKe ? (
+            <div className="admin-statistics-error">
+              {loiThongKe}
+              <button onClick={layThongKe}>THỬ LẠI</button>
+            </div>
+          ) : (
+            <div className="admin-statistics-grid">
+              {/* TỔNG DOANH THU */}
+              <div className="admin-stat-card">
+                <div className="admin-stat-icon">💰</div>
+
+                <div>
+                  <p>TỔNG DOANH THU</p>
+
+                  <h3>{thongKe.tongDoanhThu.toLocaleString("vi-VN")} đ</h3>
+
+                  <span>Đơn hàng đã hoàn thành</span>
+                </div>
+              </div>
+
+              {/* SỐ LƯỢNG SẢN PHẨM */}
+              <div className="admin-stat-card">
+                <div className="admin-stat-icon">🏍️</div>
+
+                <div>
+                  <p>SỐ LƯỢNG SẢN PHẨM</p>
+
+                  <h3>{thongKe.soLuongSanPham}</h3>
+
+                  <span>Tổng sản phẩm trong hệ thống</span>
+                </div>
+              </div>
+
+              {/* SỐ LƯỢNG BÀI ĐĂNG */}
+              <div className="admin-stat-card">
+                <div className="admin-stat-icon">📝</div>
+
+                <div>
+                  <p>SỐ BÀI ĐĂNG SẢN PHẨM</p>
+
+                  <h3>{thongKe.soLuongBaiDang}</h3>
+
+                  <span>Tổng sản phẩm đã đăng bán</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================
+          QUẢN LÝ ĐƠN HÀNG
+      ====================================== */}
+
       {hienQuanLyDonHang && (
         <div className="admin-orders">
           <QuanLyDonHang />
         </div>
       )}
 
-      {/* QUẢN LÝ TÀI KHOẢN */}
+      {/* ======================================
+          QUẢN LÝ TÀI KHOẢN
+      ====================================== */}
+
       <div className="admin-users">
         <div className="admin-users-header">
           <div>
@@ -305,9 +474,7 @@ function Admin({ user, dangXuat, dongMoQuanLySanPham }) {
                           onChange={(e) => doiQuyen(item._id, e.target.value)}
                         >
                           <option value="customer">Khách hàng</option>
-
                           <option value="staff">Nhân viên</option>
-
                           <option value="admin">Admin</option>
                         </select>
 

@@ -3397,3 +3397,136 @@ body {
     width: 100%;
   }
 }
+
+/* ======================================
+   THỐNG KÊ ADMIN - MH MOTO
+====================================== */
+
+.admin-statistics {
+  margin: 30px 0;
+  padding: 25px;
+  background: #101010;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #fff;
+}
+
+/* TIÊU ĐỀ THỐNG KÊ */
+
+.admin-statistics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.admin-statistics-header h2 {
+  color: #e31b23;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.admin-statistics-header p {
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* DANH SÁCH 3 Ô THỐNG KÊ */
+
+.admin-statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* TỪNG Ô THỐNG KÊ */
+
+.admin-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 25px 20px;
+  background: #1b1b1b;
+  border: 1px solid #8f171b;
+  border-radius: 12px;
+  transition: 0.3s;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-5px);
+  border-color: #ff2525;
+  box-shadow: 0 5px 20px rgba(227, 27, 35, 0.2);
+}
+
+/* ICON */
+
+.admin-stat-icon {
+  font-size: 38px;
+  min-width: 45px;
+}
+
+/* TÊN THỐNG KÊ */
+
+.admin-stat-card p {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+/* GIÁ TRỊ THỐNG KÊ */
+
+.admin-stat-card h3 {
+  color: #ed252c;
+  font-size: 25px;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+/* MÔ TẢ */
+
+.admin-stat-card span {
+  color: #888;
+  font-size: 12px;
+}
+
+/* THÔNG BÁO LỖI */
+
+.admin-statistics-error {
+  padding: 20px;
+  color: #ff5555;
+  background: #241010;
+  border: 1px solid #a51e24;
+  border-radius: 8px;
+}
+
+.admin-statistics-error button {
+  display: block;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: #c71920;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .admin-statistics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-statistics-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

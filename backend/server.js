@@ -1,3 +1,4 @@
+
 // ======================================
 // IMPORT THƯ VIỆN
 // ======================================
@@ -66,7 +67,6 @@ async function kiemTraTaiKhoan(req, res, next) {
     }
 
     req.user = user;
-
     next();
   } catch (error) {
     console.error("Lỗi kiểm tra tài khoản:", error);
@@ -106,7 +106,6 @@ async function kiemTraAdmin(req, res, next) {
     }
 
     req.admin = admin;
-
     next();
   } catch (error) {
     console.error("Lỗi kiểm tra quyền admin:", error);
@@ -497,19 +496,10 @@ app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 // TẠO ĐƠN HÀNG
 // ======================================
 
-// ======================================
-// TẠO ĐƠN HÀNG - LƯU ẢNH SẢN PHẨM
-// ======================================
-
-// ======================================
-// TẠO ĐƠN HÀNG - LƯU ĐẦY ĐỦ ẢNH SẢN PHẨM
-// ======================================
-
 app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
   try {
     const { hoTen, soDienThoai, diaChi, items, phuongThucThanhToan } = req.body;
 
-    // KIỂM TRA THÔNG TIN KHÁCH HÀNG
     if (
       typeof hoTen !== "string" ||
       typeof soDienThoai !== "string" ||
@@ -525,7 +515,6 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
       });
     }
 
-    // KIỂM TRA PHƯƠNG THỨC THANH TOÁN
     if (!["COD", "BANK_TRANSFER"].includes(phuongThucThanhToan)) {
       return res.status(400).json({
         message: "Phương thức thanh toán không hợp lệ!",
@@ -535,7 +524,6 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
     let tongTien = 0;
     const danhSachSanPham = [];
 
-    // LẤY THÔNG TIN SẢN PHẨM TỪ DATABASE
     for (const sp of items) {
       const productId = String(sp.productId || sp._id || sp.id || "");
 
@@ -575,7 +563,6 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 
       tongTien += gia * soLuong;
 
-      // LẤY ẢNH SẢN PHẨM TỪ DATABASE
       const hinhAnhSanPham = product.hinhAnh || "";
 
       console.log("=================================");
@@ -592,7 +579,6 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
       });
     }
 
-    // TẠO ĐƠN HÀNG
     const donHang = await Order.create({
       userId: req.user._id,
       hoTen: hoTen.trim(),
@@ -622,6 +608,7 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
     });
   }
 });
+
 // ======================================
 // LẤY ĐƠN HÀNG CỦA TÀI KHOẢN
 // ======================================
@@ -832,6 +819,54 @@ app.put("/api/admin/orders/:id/status", kiemTraAdmin, async (req, res) => {
 
     return res.status(500).json({
       message: "Không thể cập nhật trạng thái đơn hàng!",
+    });
+  }
+});
+
+// ======================================
+// ADMIN - THỐNG KÊ WEBSITE MH MOTO
+// ======================================
+
+app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
+  try {
+    // 1. TỔNG DOANH THU ĐƠN HÀNG ĐÃ HOÀN THÀNH
+    const ketQuaDoanhThu = await Order.aggregate([
+      {
+        $match: {
+          trangThaiDonHang: "Đã hoàn thành",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          tongDoanhThu: {
+            $sum: "$tongTien",
+          },
+        },
+      },
+    ]);
+
+    const tongDoanhThu =
+      ketQuaDoanhThu.length > 0 ? ketQuaDoanhThu[0].tongDoanhThu : 0;
+
+    // 2. ĐẾM SỐ LƯỢNG SẢN PHẨM
+    const soLuongSanPham = await Product.countDocuments();
+
+    // 3. ĐẾM SỐ BÀI ĐĂNG SẢN PHẨM
+    const soLuongBaiDang = await Product.countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      tongDoanhThu,
+      soLuongSanPham,
+      soLuongBaiDang,
+    });
+  } catch (error) {
+    console.error("Lỗi thống kê Admin:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Không thể lấy dữ liệu thống kê!",
     });
   }
 });
