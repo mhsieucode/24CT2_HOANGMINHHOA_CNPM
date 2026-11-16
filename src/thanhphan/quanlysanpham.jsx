@@ -330,10 +330,6 @@ function QuanLySanPham({ dong }) {
     <div className="quan-ly-san-pham">
       <h1>QUẢN LÝ SẢN PHẨM</h1>
 
-      <button type="button" onClick={dong}>
-        QUAY LẠI DASHBOARD
-      </button>
-
       {!coQuyenAdmin && (
         <div className="thong-bao-quyen">
           <h3>Bạn không có quyền quản lý sản phẩm!</h3>

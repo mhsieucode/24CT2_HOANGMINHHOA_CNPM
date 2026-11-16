@@ -1,4 +1,3 @@
-
 // ======================================
 // IMPORT THƯ VIỆN
 // ======================================
@@ -21,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 // IMPORT MODEL VÀ ROUTE
 // ======================================
 
-const User = require("./models/User");
+const User = require("./models/user");
 const Product = require("./models/product");
 const Cart = require("./models/cart");
 const Order = require("./models/order");

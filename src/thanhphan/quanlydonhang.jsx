@@ -1,23 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "../App.css";
 
-// ======================================
-// ĐỊA CHỈ API
-// ======================================
-
 const API = "http://localhost:5000";
-
-// ======================================
-// QUẢN LÝ ĐƠN HÀNG
-// ======================================
 
 function QuanLyDonHang() {
   const [donHang, setDonHang] = useState([]);
   const [products, setProducts] = useState([]);
   const [dangTai, setDangTai] = useState(true);
+  const [dangCapNhat, setDangCapNhat] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user._id || user.id;
+  const userId = user._id || user.id || "";
 
   // ======================================
   // LẤY ID SẢN PHẨM
@@ -29,7 +22,7 @@ function QuanLyDonHang() {
     const id = sp.productId || sp.product?._id || sp.product || sp._id;
 
     if (typeof id === "object") {
-      return String(id._id || "");
+      return String(id?._id || "");
     }
 
     return String(id || "");
@@ -46,31 +39,27 @@ function QuanLyDonHang() {
 
     if (!duongDan) return "";
 
-    // Ảnh có đường dẫn đầy đủ
     if (
       duongDan.startsWith("http://") ||
       duongDan.startsWith("https://") ||
-      duongDan.startsWith("data:image/")
+      duongDan.startsWith("data:image/") ||
+      duongDan.startsWith("blob:")
     ) {
       return duongDan;
     }
 
-    // Ảnh được upload lên backend
-    if (duongDan.startsWith("/uploads/")) {
-      return `${API}${duongDan}`;
-    }
-
-    // Ảnh nằm trong thư mục public của frontend
     if (duongDan.startsWith("/image/") || duongDan.startsWith("/images/")) {
       return duongDan;
     }
 
-    // Ảnh có dạng uploads/tenanh.jpg
+    if (duongDan.startsWith("/uploads/")) {
+      return `${API}${duongDan}`;
+    }
+
     if (duongDan.startsWith("uploads/")) {
       return `${API}/${duongDan}`;
     }
 
-    // Đường dẫn tương đối khác
     if (duongDan.startsWith("/")) {
       return `${API}${duongDan}`;
     }
@@ -79,21 +68,43 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // LẤY DANH SÁCH ĐƠN HÀNG VÀ SẢN PHẨM
+  // ĐỊNH DẠNG TIỀN
   // ======================================
 
-  const layDonHang = async () => {
+  const dinhDangTien = (gia) => {
+    return `${Number(gia || 0).toLocaleString("vi-VN")} VNĐ`;
+  };
+
+  // ======================================
+  // LẤY ĐƠN HÀNG VÀ SẢN PHẨM
+  // ======================================
+
+  const layDonHang = useCallback(async () => {
     try {
       setDangTai(true);
 
-      // LẤY DANH SÁCH SẢN PHẨM
-      const responseSanPham = await fetch(`${API}/api/products`);
+      const [responseSanPham, responseDonHang] = await Promise.all([
+        fetch(`${API}/api/products`),
+
+        fetch(`${API}/api/admin/orders`, {
+          headers: {
+            "x-user-id": userId,
+          },
+        }),
+      ]);
 
       const dataSanPham = await responseSanPham.json();
+      const dataDonHang = await responseDonHang.json();
 
       if (!responseSanPham.ok) {
         throw new Error(
           dataSanPham.message || "Không thể lấy danh sách sản phẩm!"
+        );
+      }
+
+      if (!responseDonHang.ok) {
+        throw new Error(
+          dataDonHang.message || "Không thể lấy danh sách đơn hàng!"
         );
       }
 
@@ -102,47 +113,21 @@ function QuanLyDonHang() {
         : dataSanPham.products || [];
 
       setProducts(danhSachSanPham);
-
-      console.log("Danh sách sản phẩm:", danhSachSanPham);
-
-      // LẤY DANH SÁCH ĐƠN HÀNG
-      const response = await fetch(`${API}/api/admin/orders`, {
-        headers: {
-          "x-user-id": userId || "",
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.message || "Không thể lấy đơn hàng!");
-        return;
-      }
-
-      const danhSachDonHang = data.orders || [];
-
-      console.log("Danh sách đơn hàng:", danhSachDonHang);
-
-      setDonHang(danhSachDonHang);
+      setDonHang(dataDonHang.orders || []);
     } catch (error) {
       console.error("Lỗi lấy đơn hàng:", error);
-
       alert(error.message || "Không thể kết nối đến server!");
     } finally {
       setDangTai(false);
     }
-  };
-
-  // ======================================
-  // TỰ ĐỘNG LẤY ĐƠN HÀNG
-  // ======================================
+  }, [userId]);
 
   useEffect(() => {
     layDonHang();
-  }, []);
+  }, [layDonHang]);
 
   // ======================================
-  // TÌM SẢN PHẨM TRONG MONGODB
+  // TÌM SẢN PHẨM TRONG DATABASE
   // ======================================
 
   const timSanPham = (sp) => {
@@ -156,16 +141,55 @@ function QuanLyDonHang() {
   };
 
   // ======================================
+  // LẤY THÔNG TIN SẢN PHẨM
+  // ======================================
+
+  const layThongTinSanPham = (sp) => {
+    const sanPhamDB = timSanPham(sp);
+
+    const hinhAnh =
+      sp.hinhAnh ||
+      sp.image ||
+      sp.anh ||
+      sp.imageUrl ||
+      sp.product?.hinhAnh ||
+      sp.product?.image ||
+      sanPhamDB?.hinhAnh ||
+      sanPhamDB?.image ||
+      "";
+
+    const tenSanPham =
+      sp.tenSanPham ||
+      sp.name ||
+      sp.product?.tenSanPham ||
+      sanPhamDB?.tenSanPham ||
+      "Sản phẩm";
+
+    const gia = sp.gia ?? sp.price ?? sp.product?.gia ?? sanPhamDB?.gia ?? 0;
+
+    const soLuong = sp.soLuong ?? sp.quantity ?? 1;
+
+    return {
+      hinhAnh: layDuongDanAnh(hinhAnh),
+      tenSanPham,
+      gia,
+      soLuong,
+    };
+  };
+
+  // ======================================
   // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
   // ======================================
 
   const capNhatTrangThai = async (id, trangThaiMoi) => {
     try {
+      setDangCapNhat(id);
+
       const response = await fetch(`${API}/api/admin/orders/${id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId || "",
+          "x-user-id": userId,
         },
         body: JSON.stringify({
           trangThaiDonHang: trangThaiMoi,
@@ -175,26 +199,62 @@ function QuanLyDonHang() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Cập nhật thất bại!");
-        return;
+        throw new Error(data.message || "Cập nhật trạng thái thất bại!");
       }
 
-      alert("Cập nhật trạng thái thành công!");
+      setDonHang((danhSachCu) =>
+        danhSachCu.map((don) =>
+          don._id === id
+            ? {
+                ...don,
+                trangThaiDonHang: trangThaiMoi,
+              }
+            : don
+        )
+      );
 
-      await layDonHang();
+      alert("Cập nhật trạng thái thành công!");
     } catch (error) {
       console.error("Lỗi cập nhật trạng thái:", error);
-
-      alert("Không thể kết nối đến server!");
+      alert(error.message || "Không thể kết nối đến server!");
+    } finally {
+      setDangCapNhat("");
     }
   };
 
   // ======================================
-  // ĐANG TẢI ĐƠN HÀNG
+  // THỐNG KÊ ĐƠN HÀNG
+  // ======================================
+
+  const tongDonHang = donHang.length;
+
+  const donChoXacNhan = donHang.filter(
+    (don) => (don.trangThaiDonHang || "Chờ xác nhận") === "Chờ xác nhận"
+  ).length;
+
+  const donDaXacNhan = donHang.filter(
+    (don) => don.trangThaiDonHang === "Đã xác nhận"
+  ).length;
+
+  const donDangGiao = donHang.filter(
+    (don) => don.trangThaiDonHang === "Đang giao hàng"
+  ).length;
+
+  const donHoanThanh = donHang.filter(
+    (don) => don.trangThaiDonHang === "Đã hoàn thành"
+  ).length;
+
+  // ======================================
+  // GIAO DIỆN ĐANG TẢI
   // ======================================
 
   if (dangTai) {
-    return <div className="donhang-loading">Đang tải đơn hàng...</div>;
+    return (
+      <div className="donhang-loading">
+        <div className="donhang-spinner"></div>
+        Đang tải đơn hàng...
+      </div>
+    );
   }
 
   // ======================================
@@ -208,181 +268,200 @@ function QuanLyDonHang() {
       <div className="donhang-header">
         <div>
           <h2>QUẢN LÝ ĐƠN HÀNG</h2>
-          <p>MH MOTO - Quản lý đơn đặt hàng</p>
+          <p>MH MOTO · Quản lý đơn đặt hàng</p>
         </div>
 
-        <button onClick={layDonHang}>Làm mới</button>
+        <button type="button" onClick={layDonHang}>
+          ↻ Làm mới
+        </button>
+      </div>
+
+      {/* THỐNG KÊ */}
+
+      <div className="donhang-thong-ke">
+        <div className="donhang-thong-ke-item">
+          <span>Tổng đơn hàng</span>
+          <strong>{tongDonHang}</strong>
+        </div>
+
+        <div className="donhang-thong-ke-item">
+          <span>Chờ xác nhận</span>
+          <strong>{donChoXacNhan}</strong>
+        </div>
+
+        <div className="donhang-thong-ke-item">
+          <span>Đã xác nhận</span>
+          <strong>{donDaXacNhan}</strong>
+        </div>
+
+        <div className="donhang-thong-ke-item">
+          <span>Đang giao</span>
+          <strong>{donDangGiao}</strong>
+        </div>
+
+        <div className="donhang-thong-ke-item">
+          <span>Đã hoàn thành</span>
+          <strong>{donHoanThanh}</strong>
+        </div>
       </div>
 
       {/* DANH SÁCH ĐƠN HÀNG */}
 
       {donHang.length === 0 ? (
-        <div className="donhang-trong">Chưa có đơn hàng nào!</div>
+        <div className="donhang-trong">
+          <span>📦</span>
+          <p>Chưa có đơn hàng nào!</p>
+        </div>
       ) : (
         <div className="donhang-danh-sach">
           {donHang.map((don) => (
             <div className="donhang-card" key={don._id}>
-              {/* THÔNG TIN ĐƠN HÀNG */}
+              {/* ĐẦU ĐƠN HÀNG */}
 
               <div className="donhang-card-header">
-                <div>
+                <div className="donhang-ma">
                   <h3>
-                    Đơn hàng #
+                    ĐƠN HÀNG #
                     {don._id ? don._id.slice(-6).toUpperCase() : "UNKNOWN"}
                   </h3>
 
-                  <p>
+                  <span>
                     Ngày đặt:{" "}
                     {don.createdAt
                       ? new Date(don.createdAt).toLocaleString("vi-VN")
-                      : "Chưa có"}
-                  </p>
+                      : "Chưa có ngày đặt"}
+                  </span>
                 </div>
 
-                <span className="donhang-tong-tien">
-                  {Number(don.tongTien || 0).toLocaleString("vi-VN")} VNĐ
-                </span>
+                <div className="donhang-tong-tien">
+                  {dinhDangTien(don.tongTien)}
+                </div>
               </div>
 
-              {/* THÔNG TIN KHÁCH HÀNG */}
+              {/* HAI CỘT NỘI DUNG */}
 
-              <div className="donhang-thong-tin">
-                <p>
-                  <strong>Khách hàng:</strong> {don.hoTen || "Chưa có"}
-                </p>
+              <div className="donhang-noi-dung">
+                {/* CỘT TRÁI: SẢN PHẨM */}
 
-                <p>
-                  <strong>Số điện thoại:</strong> {don.soDienThoai || "Chưa có"}
-                </p>
+                <div className="donhang-cot-san-pham">
+                  <h4>SẢN PHẨM ĐẶT MUA</h4>
 
-                <p>
-                  <strong>Địa chỉ:</strong> {don.diaChi || "Chưa có"}
-                </p>
+                  {don.items?.length > 0 ? (
+                    <div className="donhang-san-pham-list">
+                      {don.items.map((sp, index) => {
+                        const sanPham = layThongTinSanPham(sp);
 
-                <p>
-                  <strong>Thanh toán:</strong>{" "}
-                  {don.phuongThucThanhToan === "COD"
-                    ? "Thanh toán khi nhận hàng"
-                    : "Chuyển khoản ngân hàng"}
-                </p>
-              </div>
-
-              {/* DANH SÁCH SẢN PHẨM */}
-
-              <div className="donhang-san-pham">
-                <h4>Sản phẩm đặt mua</h4>
-
-                {don.items?.length > 0 ? (
-                  don.items.map((sp, index) => {
-                    // TÌM SẢN PHẨM TRONG DATABASE
-
-                    const sanPhamDB = timSanPham(sp);
-
-                    // LẤY ẢNH TỪ ĐƠN HÀNG HOẶC DATABASE
-
-                    const hinhAnh =
-                      sp.hinhAnh ||
-                      sp.image ||
-                      sp.anh ||
-                      sp.imageUrl ||
-                      sp.product?.hinhAnh ||
-                      sp.product?.image ||
-                      sanPhamDB?.hinhAnh ||
-                      sanPhamDB?.image ||
-                      "";
-
-                    const duongDanAnh = layDuongDanAnh(hinhAnh);
-
-                    // TÊN SẢN PHẨM
-
-                    const tenSanPham =
-                      sp.tenSanPham ||
-                      sp.name ||
-                      sp.product?.tenSanPham ||
-                      sanPhamDB?.tenSanPham ||
-                      "Sản phẩm";
-
-                    // GIÁ SẢN PHẨM
-
-                    const giaSanPham =
-                      sp.gia || sp.price || sanPhamDB?.gia || 0;
-
-                    // SỐ LƯỢNG
-
-                    const soLuong = sp.soLuong || sp.quantity || 1;
-
-                    return (
-                      <div
-                        className="donhang-san-pham-item"
-                        key={sp.productId || sp._id || index}
-                      >
-                        {/* ẢNH SẢN PHẨM */}
-
-                        <div className="donhang-anh-san-pham">
-                          {duongDanAnh ? (
-                            <img
-                              src={duongDanAnh}
-                              alt={tenSanPham}
-                              onLoad={() => {
-                                console.log(
-                                  "Ảnh sản phẩm hiển thị:",
-                                  duongDanAnh
-                                );
-                              }}
-                              onError={(e) => {
-                                console.error(
-                                  "Không tải được ảnh:",
-                                  duongDanAnh
-                                );
-
-                                e.currentTarget.style.display = "none";
-
-                                const anhLoi =
-                                  e.currentTarget.nextElementSibling;
-
-                                if (anhLoi) {
-                                  anhLoi.style.display = "flex";
-                                }
-                              }}
-                            />
-                          ) : null}
-
+                        return (
                           <div
-                            className="donhang-anh-loi"
-                            style={{
-                              display: duongDanAnh ? "none" : "flex",
-                            }}
+                            className="donhang-san-pham-item"
+                            key={sp.productId || sp._id || index}
                           >
-                            🏍️
-                            <span>Không có ảnh</span>
+                            {/* ẢNH SẢN PHẨM */}
+
+                            <div className="donhang-anh-san-pham">
+                              {sanPham.hinhAnh ? (
+                                <>
+                                  <img
+                                    src={sanPham.hinhAnh}
+                                    alt={sanPham.tenSanPham}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+
+                                      const fallback =
+                                        e.currentTarget.nextElementSibling;
+
+                                      if (fallback) {
+                                        fallback.style.display = "flex";
+                                      }
+                                    }}
+                                  />
+
+                                  <div
+                                    className="donhang-anh-loi"
+                                    style={{ display: "none" }}
+                                  >
+                                    🏍️
+                                    <span>Không có ảnh</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="donhang-anh-loi">
+                                  🏍️
+                                  <span>Không có ảnh</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* THÔNG TIN SẢN PHẨM */}
+
+                            <div className="donhang-san-pham-info">
+                              <p>{sanPham.tenSanPham}</p>
+
+                              <small>
+                                {dinhDangTien(sanPham.gia)}
+                                {" × "}
+                                {sanPham.soLuong}
+                              </small>
+
+                              <strong>
+                                Thành tiền:{" "}
+                                {dinhDangTien(
+                                  Number(sanPham.gia) * Number(sanPham.soLuong)
+                                )}
+                              </strong>
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="donhang-khong-co-sp">
+                      Đơn hàng chưa có thông tin sản phẩm.
+                    </p>
+                  )}
+                </div>
 
-                        {/* THÔNG TIN SẢN PHẨM */}
+                {/* CỘT PHẢI: THÔNG TIN KHÁCH HÀNG */}
 
-                        <div className="donhang-san-pham-info">
-                          <p>{tenSanPham}</p>
+                <div className="donhang-cot-thong-tin">
+                  <h4>THÔNG TIN KHÁCH HÀNG</h4>
 
-                          <small>
-                            {Number(giaSanPham).toLocaleString("vi-VN")} VNĐ ×{" "}
-                            {soLuong}
-                          </small>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p>Đơn hàng chưa có thông tin sản phẩm.</p>
-                )}
+                  <div className="donhang-thong-tin">
+                    <div>
+                      <span>Khách hàng</span>
+                      <strong>{don.hoTen || "Chưa có"}</strong>
+                    </div>
+
+                    <div>
+                      <span>Số điện thoại</span>
+                      <strong>{don.soDienThoai || "Chưa có"}</strong>
+                    </div>
+
+                    <div>
+                      <span>Địa chỉ nhận hàng</span>
+                      <strong>{don.diaChi || "Chưa có"}</strong>
+                    </div>
+
+                    <div>
+                      <span>Phương thức thanh toán</span>
+                      <strong>
+                        {don.phuongThucThanhToan === "COD"
+                          ? "Thanh toán khi nhận hàng"
+                          : "Chuyển khoản ngân hàng"}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* CẬP NHẬT TRẠNG THÁI */}
+              {/* TRẠNG THÁI ĐƠN HÀNG */}
 
               <div className="donhang-cap-nhat">
-                <label>Trạng thái đơn hàng:</label>
+                <label>TRẠNG THÁI ĐƠN HÀNG</label>
 
                 <select
                   value={don.trangThaiDonHang || "Chờ xác nhận"}
+                  disabled={dangCapNhat === don._id}
                   onChange={(e) => capNhatTrangThai(don._id, e.target.value)}
                 >
                   <option value="Chờ xác nhận">Chờ xác nhận</option>
@@ -395,6 +474,12 @@ function QuanLyDonHang() {
 
                   <option value="Đã hủy">Đã hủy</option>
                 </select>
+
+                {dangCapNhat === don._id && (
+                  <span className="donhang-dang-cap-nhat">
+                    Đang cập nhật...
+                  </span>
+                )}
               </div>
             </div>
           ))}

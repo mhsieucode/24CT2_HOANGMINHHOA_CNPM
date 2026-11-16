@@ -1,0 +1,30 @@
+import React from "react";
+import ThanhTimKiem from "./ThanhTimKiem";
+import "../App.css";
+
+function ThanhTimKiem({ tuKhoa, setTuKhoa }) {
+  return (
+    <div className="thanh-tim-kiem">
+      <span className="tim-kiem-icon">⌕</span>
+
+      <input
+        type="text"
+        placeholder="Tìm kiếm xe moto, mũ bảo hiểm, phụ kiện..."
+        value={tuKhoa}
+        onChange={(e) => setTuKhoa(e.target.value)}
+      />
+
+      {tuKhoa && (
+        <button
+          className="xoa-tim-kiem"
+          onClick={() => setTuKhoa("")}
+          type="button"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default ThanhTimKiem;

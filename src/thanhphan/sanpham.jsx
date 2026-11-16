@@ -106,6 +106,9 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   const [quantity, setQuantity] = useState(1);
   const [sanPhamMongo, setSanPhamMongo] = useState([]);
 
+  // STATE TÌM KIẾM
+  const [tuKhoa, setTuKhoa] = useState("");
+
   // ======================================
   // 6. LẤY SẢN PHẨM TỪ MONGODB
   // ======================================
@@ -159,7 +162,30 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 9. MỞ CHI TIẾT SẢN PHẨM
+  // 9. LỌC SẢN PHẨM THEO TỪ KHÓA
+  // ======================================
+
+  const sanPhamTimKiem = (product) => {
+    const tuKhoaChuan = chuanHoaDanhMuc(tuKhoa);
+
+    if (!tuKhoaChuan) return true;
+
+    const thongTinSanPham = [
+      product.tenSanPham,
+      product.danhMuc,
+      product.moTa,
+      product.thuongHieu,
+      product.hang,
+      product.brand,
+    ];
+
+    return thongTinSanPham.some((thongTin) =>
+      chuanHoaDanhMuc(thongTin).includes(tuKhoaChuan)
+    );
+  };
+
+  // ======================================
+  // 10. MỞ CHI TIẾT SẢN PHẨM
   // ======================================
 
   const openDetail = (product) => {
@@ -168,7 +194,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 10. ĐÓNG CHI TIẾT SẢN PHẨM
+  // 11. ĐÓNG CHI TIẾT SẢN PHẨM
   // ======================================
 
   const closeDetail = () => {
@@ -176,7 +202,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 11. THÊM SẢN PHẨM VÀO GIỎ HÀNG
+  // 12. THÊM SẢN PHẨM VÀO GIỎ HÀNG
   // ======================================
 
   const themVaoGioHang = () => {
@@ -226,7 +252,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 12. TĂNG GIẢM SỐ LƯỢNG
+  // 13. TĂNG GIẢM SỐ LƯỢNG
   // ======================================
 
   const increaseQuantity = () => {
@@ -242,13 +268,14 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 13. HIỂN THỊ MỘT SẢN PHẨM
+  // 14. HIỂN THỊ MỘT SẢN PHẨM
   // ======================================
 
   const ProductCard = ({ product, index }) => {
     return (
       <div className="product-card">
         {/* HÌNH ẢNH SẢN PHẨM */}
+
         <div className="product-image">
           <img src={layDuongDanAnh(product.hinhAnh)} alt={product.tenSanPham} />
 
@@ -258,6 +285,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
         </div>
 
         {/* THÔNG TIN SẢN PHẨM */}
+
         <div className="product-info">
           <small>{layNhomDanhMuc(product.danhMuc) || product.danhMuc}</small>
 
@@ -274,31 +302,36 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
   };
 
   // ======================================
-  // 14. LỌC SẢN PHẨM THEO DANH MỤC
+  // 15. LỌC SẢN PHẨM THEO DANH MỤC
   // ======================================
 
   const nhomDangChon = layNhomDanhMuc(danhMuc);
 
-  // LẤY POSTER CỦA DANH MỤC ĐANG CHỌN
   const nhomDuocChon = CAC_DANH_MUC.find(
     (nhom) => nhom.giaTri === nhomDangChon
   );
 
-  // LỌC SẢN PHẨM
-  const sanPhamDuocChon = nhomDangChon
-    ? sanPhamMongo.filter(
-        (product) => layNhomDanhMuc(product.danhMuc) === nhomDangChon
-      )
-    : sanPhamMongo;
+  // LỌC THEO DANH MỤC VÀ TỪ KHÓA
+
+  const sanPhamDuocChon = sanPhamMongo.filter((product) => {
+    const dungDanhMuc = nhomDangChon
+      ? layNhomDanhMuc(product.danhMuc) === nhomDangChon
+      : true;
+
+    return dungDanhMuc && sanPhamTimKiem(product);
+  });
+
+  const dangTimKiem = tuKhoa.trim().length > 0;
 
   // ======================================
-  // 15. GIAO DIỆN SẢN PHẨM
+  // 16. GIAO DIỆN SẢN PHẨM
   // ======================================
 
   return (
     <>
       <section className="products" id="sanpham">
         {/* TIÊU ĐỀ DANH MỤC */}
+
         <div className="section-title">
           <span>MH MOTO SHOP</span>
 
@@ -320,12 +353,48 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
         </div>
 
         {/* ==================================
-            KHI NGƯỜI DÙNG CHỌN DANH MỤC
+            17. THANH TÌM KIẾM SẢN PHẨM
+        ================================== */}
+
+        <div className="sanpham-search">
+          <span className="sanpham-search-icon">⌕</span>
+
+          <input
+            type="text"
+            placeholder="Tìm kiếm xe moto, mũ bảo hiểm, phụ kiện..."
+            value={tuKhoa}
+            onChange={(e) => setTuKhoa(e.target.value)}
+          />
+
+          {tuKhoa && (
+            <button
+              type="button"
+              className="sanpham-search-clear"
+              onClick={() => setTuKhoa("")}
+              title="Xóa tìm kiếm"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* SỐ LƯỢNG KẾT QUẢ TÌM KIẾM */}
+
+        {dangTimKiem && (
+          <p className="search-result-count">
+            Tìm thấy <strong>{sanPhamDuocChon.length}</strong> sản phẩm phù hợp
+            với "{tuKhoa}"
+          </p>
+        )}
+
+        {/* ==================================
+            18. KHI NGƯỜI DÙNG CHỌN DANH MỤC
         ================================== */}
 
         {nhomDangChon ? (
           <div className="category-product">
             {/* POSTER BÊN TRÁI */}
+
             <div className="product-banner">
               <img src={nhomDuocChon?.banner} alt={nhomDuocChon?.ten} />
 
@@ -336,6 +405,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
             </div>
 
             {/* SẢN PHẨM BÊN PHẢI */}
+
             <div className="product-grid">
               {sanPhamDuocChon.map((product, index) => (
                 <ProductCard
@@ -347,7 +417,14 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
             </div>
 
             {/* KHÔNG CÓ SẢN PHẨM */}
-            {sanPhamDuocChon.length === 0 && <p className="empty-product"></p>}
+
+            {sanPhamDuocChon.length === 0 && (
+              <p className="empty-product">
+                {dangTimKiem
+                  ? "Không tìm thấy sản phẩm phù hợp!"
+                  : "Danh mục hiện chưa có sản phẩm."}
+              </p>
+            )}
           </div>
         ) : (
           /* ==================================
@@ -355,13 +432,20 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
           ================================== */
 
           CAC_DANH_MUC.map((nhom) => {
-            const danhSach = sanPhamMongo.filter(
+            const danhSach = sanPhamDuocChon.filter(
               (product) => layNhomDanhMuc(product.danhMuc) === nhom.giaTri
             );
+
+            // Khi tìm kiếm, chỉ hiện danh mục có sản phẩm phù hợp
+
+            if (dangTimKiem && danhSach.length === 0) {
+              return null;
+            }
 
             return (
               <div className="category-product" key={nhom.giaTri}>
                 {/* POSTER DANH MỤC BÊN TRÁI */}
+
                 <div className="product-banner">
                   <img src={nhom.banner} alt={nhom.ten} />
 
@@ -372,6 +456,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
                 </div>
 
                 {/* SẢN PHẨM BÊN PHẢI */}
+
                 <div className="product-grid">
                   {danhSach.map((product, index) => (
                     <ProductCard
@@ -383,15 +468,34 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
                 </div>
 
                 {/* THÔNG BÁO KHI DANH MỤC TRỐNG */}
-                {danhSach.length === 0 && <p className="empty-product"></p>}
+
+                {!dangTimKiem && danhSach.length === 0 && (
+                  <p className="empty-product">
+                    Danh mục hiện chưa có sản phẩm.
+                  </p>
+                )}
               </div>
             );
           })
         )}
+
+        {/* KHÔNG TÌM THẤY SẢN PHẨM Ở TẤT CẢ DANH MỤC */}
+
+        {!nhomDangChon && dangTimKiem && sanPhamDuocChon.length === 0 && (
+          <div className="search-no-result">
+            <span>⌕</span>
+            <h3>KHÔNG TÌM THẤY SẢN PHẨM</h3>
+            <p>Không có sản phẩm phù hợp với từ khóa "{tuKhoa}".</p>
+
+            <button type="button" onClick={() => setTuKhoa("")}>
+              XÓA TÌM KIẾM
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ======================================
-          16. POPUP CHI TIẾT SẢN PHẨM
+          19. POPUP CHI TIẾT SẢN PHẨM
       ====================================== */}
 
       {selectedProduct && (
@@ -401,11 +505,13 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* NÚT ĐÓNG */}
+
             <button className="detail-close" onClick={closeDetail}>
               ×
             </button>
 
             {/* HÌNH ẢNH SẢN PHẨM */}
+
             <div className="detail-product-left">
               <div className="detail-product-image">
                 <img
@@ -423,6 +529,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
             </div>
 
             {/* THÔNG TIN SẢN PHẨM */}
+
             <div className="detail-product-info">
               <span className="detail-status">
                 ● {selectedProduct.soLuong > 0 ? "CÒN HÀNG" : "HẾT HÀNG"}
@@ -447,6 +554,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
               <div className="detail-line"></div>
 
               {/* THÔNG SỐ SẢN PHẨM */}
+
               <div className="detail-spec">
                 <div>
                   <span>Hãng</span>
@@ -475,6 +583,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
               </div>
 
               {/* CHỌN SỐ LƯỢNG */}
+
               <div className="detail-quantity">
                 <span>Số lượng</span>
 
@@ -492,6 +601,7 @@ function SanPham({ danhMuc = "", boLocDanhMuc }) {
               </div>
 
               {/* NÚT MUA HÀNG */}
+
               <div className="detail-buttons">
                 <button
                   className="detail-cart-button"

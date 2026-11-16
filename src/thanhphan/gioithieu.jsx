@@ -48,7 +48,7 @@ function GioiThieu() {
         </div>
 
         <div className="about-feature">
-          <div className="feature-icon">🏍️</div>
+          <div className="feature-icon">🏎️</div>
           <h3>ĐA DẠNG</h3>
           <p>Nhiều loại phụ kiện dành cho biker và người đi mô tô.</p>
         </div>
