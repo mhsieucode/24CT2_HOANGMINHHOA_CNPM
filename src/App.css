@@ -1,3 +1,27 @@
+/* =====================================================================
+   MH MOTO - APP.CSS (ĐÃ SẮP XẾP VÀ DỌN DẸP)
+   MỤC LỤC
+   01. Cấu hình chung: font, màu sắc, reset
+   02. Khung website và poster hai bên
+   03. Header, logo, menu và tài khoản
+   04. Slider / banner trình chiếu
+   05. Danh mục sản phẩm
+   06. Danh sách, thẻ và tìm kiếm sản phẩm
+   07. Giới thiệu và đánh giá
+   08. Popup chi tiết sản phẩm và thông số kỹ thuật
+   09. Giỏ hàng và thanh toán
+   10. Đăng nhập / đăng ký
+   11. Admin: bảng điều khiển, người dùng, sản phẩm, thống kê
+   12. Nhân viên và quản lý đơn hàng
+   13. Footer và tiện ích khác
+   14. Responsive: tablet và điện thoại
+   15. Điều chỉnh giao diện cuối file (override có chủ đích)
+
+   LƯU Ý: Giữ nguyên thứ tự các khối CSS để không làm thay đổi cascade.
+   Những selector lặp ở cuối file có thể là override giao diện đang dùng,
+   vì vậy không xóa nếu chưa xác nhận chúng không còn cần thiết.
+===================================================================== */
+
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
 /* =========================
    BẢNG MÀU CHỦ ĐẠO
@@ -81,167 +105,264 @@ body {
    HEADER - THANH ĐIỀU HƯỚNG
 ========================================================= */
 
+/* =====================================================
+   MH MOTO - HEADER & NAVIGATION PRO
+   Thanh điều hướng chuyên nghiệp
+===================================================== */
+
 .header {
-  min-height: 75px;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 7%;
-  border-bottom: 1px solid #292929;
+  width: 100%;
+  min-height: 76px;
+  background: #080808;
+  border-bottom: 1px solid rgba(225, 6, 0, 0.35);
   position: relative;
-  z-index: 10;
+  z-index: 100;
 }
 
 .navbar {
   width: 100%;
-  min-height: 85px;
-  background: #050505;
+  min-height: 76px;
+  padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
-  padding: 0 20px;
-  overflow: visible;
-  position: relative;
-  z-index: 10;
+  gap: 24px;
+  background: linear-gradient(90deg, #080808, #111111, #080808);
+  box-sizing: border-box;
 }
 
-/* LOGO */
-
+/* 01. LOGO THƯƠNG HIỆU */
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  width: auto;
-  font-family: var(--moto-font);
-  font-size: 22px;
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: 1px;
+  text-decoration: none;
 }
 
 .logo img {
-  width: 91px;
-  height: 55px;
+  width: 82px;
+  height: 52px;
   object-fit: contain;
+  transition: 0.3s ease;
+}
+
+.logo:hover img {
+  transform: scale(1.06);
 }
 
 .logo span {
-  color: var(--moto-red);
-  font-size: 20px;
-  font-weight: 700;
+  color: #e10600;
+  font-size: 21px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
-/* MENU */
-
+/* 02. MENU ĐIỀU HƯỚNG */
 .nav-menu {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 27px;
   flex: 1;
   min-width: 0;
 }
 
 .nav-menu a {
   position: relative;
-  color: white;
-  text-decoration: none;
+  padding: 10px 0;
+  color: #dedede;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  text-decoration: none;
   white-space: nowrap;
-  transition: 0.3s;
+  transition: color 0.25s ease;
 }
 
 .nav-menu a:hover {
-  color: var(--moto-red);
+  color: #ff2929;
 }
 
+/* Gạch đỏ chạy dưới menu */
 .nav-menu a::after {
   content: "";
   position: absolute;
-  left: 0;
-  bottom: -6px;
+  left: 50%;
+  bottom: 2px;
   width: 0;
   height: 2px;
-  background: var(--moto-red);
-  transition: 0.3s;
+  background: #e10600;
+  transform: translateX(-50%);
+  transition: width 0.25s ease;
 }
 
 .nav-menu a:hover::after {
   width: 100%;
 }
 
-/* NÚT ĐĂNG NHẬP - ĐĂNG KÝ */
+/* 03. NÚT GIỎ HÀNG */
+.cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 38px;
+  padding: 0 11px;
+  color: #eeeeee;
+  background: #191919;
+  border: 1px solid #303030;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
 
+.cart:hover {
+  color: white;
+  background: #e10600;
+  border-color: #e10600;
+}
+
+/* 04. KHU VỰC TÀI KHOẢN */
 .auth-buttons {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-left: 5px;
+  gap: 10px;
   flex-shrink: 0;
+  margin-left: 0;
 }
 
+/* Nút đăng nhập và đăng ký */
 .login-btn,
 .register-btn {
-  height: 36px;
-  padding: 0 13px;
-  border-radius: 6px;
+  height: 38px;
+  padding: 0 17px;
+  border-radius: 7px;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.25s ease;
 }
 
+/* Đăng nhập */
 .login-btn {
+  color: #ffffff;
   background: transparent;
-  color: white;
-  border: 1px solid var(--moto-red);
+  border: 1px solid #e10600;
 }
 
 .login-btn:hover {
-  background: var(--moto-red);
-  color: white;
+  background: rgba(225, 6, 0, 0.15);
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.2);
+  transform: translateY(-2px);
 }
 
+/* Đăng ký */
 .register-btn {
-  background: linear-gradient(135deg, #b30000, #e10600);
-  color: white;
-  border: 1px solid #ff1e1e;
+  color: #ffffff;
+  background: linear-gradient(135deg, #e10600, #a90000);
+  border: 1px solid #e10600;
 }
 
 .register-btn:hover {
+  background: #ff1717;
+  box-shadow: 0 5px 16px rgba(225, 6, 0, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(225, 6, 0, 0.3);
 }
 
-/* GIỎ HÀNG TRÊN HEADER */
-
-.cart {
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: 0.3s;
-}
-
-.cart:hover {
-  color: var(--moto-red);
-}
-
+/* 05. THÔNG TIN NGƯỜI DÙNG */
 .welcome-user {
-  font-size: 14px;
-  color: white;
+  color: #eeeeee;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .welcome-user strong {
-  font-weight: 700;
+  color: #ff3333;
+  font-weight: 800;
+}
+
+/* 06. RESPONSIVE TABLET */
+@media (max-width: 1000px) {
+  .navbar {
+    padding: 10px 16px;
+    gap: 14px;
+  }
+
+  .logo img {
+    width: 65px;
+    height: 45px;
+  }
+
+  .logo span {
+    font-size: 18px;
+  }
+
+  .nav-menu {
+    gap: 14px;
+  }
+
+  .nav-menu a {
+    font-size: 11px;
+  }
+
+  .login-btn,
+  .register-btn {
+    padding: 0 10px;
+    font-size: 10px;
+  }
+}
+
+/* 07. RESPONSIVE ĐIỆN THOẠI */
+@media (max-width: 600px) {
+  .navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 10px;
+  }
+
+  .logo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .logo img {
+    width: 70px;
+    height: 45px;
+  }
+
+  .nav-menu {
+    order: 2;
+    width: 100%;
+    flex: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+
+  .nav-menu a {
+    font-size: 12px;
+  }
+
+  .auth-buttons {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .login-btn,
+  .register-btn {
+    height: 35px;
+  }
 }
 
 /* =========================================================
@@ -1000,7 +1121,7 @@ body {
 /* GIÁ */
 
 .detail-price {
-  color: #ff4d4d;
+  color: greenyellow;
   font-size: 30px;
   font-weight: 800;
   margin: 20px 0;
@@ -3014,8 +3135,11 @@ body {
   }
 
   .product-detail-modal {
-    max-height: 95vh;
-    border-radius: 10px;
+    width: 96vw;
+    max-width: 1400px;
+    height: 96vh;
+    max-height: 96vh;
+    overflow: hidden;
   }
 
   .auth-box {
@@ -3902,12 +4026,7 @@ body {
 
 /* =========================================================
    ĐỒNG BỘ GIAO DIỆN ADMIN - MH MOTO
-   Mục đích:
-   - Đồng bộ font chữ Montserrat với trang chủ.
-   - Chuẩn hóa cỡ chữ tiêu đề, mô tả, bảng và nút.
-   - Dùng một màu đỏ thương hiệu #e10600.
-   - Giữ nguyên class và chức năng React hiện tại.
-   Đặt ở CUỐI FILE để ghi đè các quy tắc Admin cũ.
+   
 ========================================================= */
 
 /* NỀN VÀ CHỮ CHUNG CỦA TRANG ADMIN */
@@ -4152,7 +4271,7 @@ body {
   line-height: 1.5;
 }
 
-/* QUẢN LÝ ĐƠN HÀNG: bỏ font Arial cũ */
+/* QUẢN LÝ ĐƠN HÀNG:*/
 .quan-ly-don-hang,
 .quan-ly-don-hang button,
 .quan-ly-don-hang input,
@@ -4416,5 +4535,674 @@ body {
 
   .search-result-count {
     width: 95%;
+  }
+}
+
+.detail-spec {
+  width: 100%;
+  margin: 18px 0;
+}
+
+.detail-spec h3 {
+  color: #e10600;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.detail-spec > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 10px 0;
+  border-bottom: 1px solid #333;
+}
+
+.detail-spec > div span {
+  color: #aaa;
+  font-size: 13px;
+  flex: 1;
+}
+
+.detail-spec > div strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.detail-no-spec {
+  color: #999;
+  font-size: 13px;
+  padding: 10px 0;
+}
+.detail-spec {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  background: #151515;
+  border: 1px solid #303030;
+  border-radius: 8px;
+}
+
+.detail-spec h3 {
+  color: #e10600;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #383838;
+}
+
+.detail-spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  min-height: 29px;
+  padding: 5px 0;
+  box-sizing: border-box;
+  border-bottom: 1px solid #292929;
+}
+
+.detail-spec-row:last-child {
+  border-bottom: none;
+}
+
+.detail-spec-row span {
+  flex: 1;
+  text-align: left;
+  color: #999;
+  font-size: 12px;
+}
+
+.detail-spec-row strong {
+  flex: 1;
+  text-align: right;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+/* =====================================
+   PHÓNG TO POPUP CHI TIẾT MH MOTO
+===================================== */
+
+@media (min-width: 769px) {
+  .product-detail-overlay {
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .product-detail-modal {
+    width: 96vw !important;
+    max-width: 1400px !important;
+
+    height: 96vh !important;
+    max-height: 96vh !important;
+
+    box-sizing: border-box;
+    overflow: hidden !important;
+  }
+
+  .detail-product-left,
+  .detail-product-info {
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  .detail-product-info {
+    padding: 20px 28px;
+    overflow: visible !important;
+  }
+
+  .detail-product-image {
+    max-height: 80vh;
+  }
+
+  .detail-product-image img {
+    max-height: 80vh;
+    object-fit: contain;
+  }
+
+  .detail-spec {
+    margin-top: 12px;
+    padding: 12px 16px;
+  }
+
+  .detail-spec-row {
+    min-height: 30px;
+    padding: 5px 0;
+  }
+
+  .detail-quantity {
+    margin-top: 12px;
+  }
+
+  .detail-buttons {
+    margin-top: 12px;
+  }
+}
+/* =====================================
+   THU NHỎ NỘI DUNG POPUP MH MOTO
+===================================== */
+
+@media (min-width: 769px) {
+  /* Cột thông tin bên phải */
+  .detail-product-info {
+    padding: 10px 24px !important;
+    overflow-y: auto !important;
+    box-sizing: border-box;
+  }
+
+  /* Tên sản phẩm */
+  .detail-product-info h2 {
+    font-size: 20px !important;
+    margin: 4px 0 !important;
+  }
+
+  /* Danh mục */
+  .detail-category {
+    font-size: 12px !important;
+    margin: 3px 0 !important;
+  }
+
+  /* Trạng thái */
+  .detail-status {
+    font-size: 11px !important;
+  }
+
+  /* Mô tả */
+  .detail-description {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin: 5px 0 !important;
+  }
+
+  /* Giá sản phẩm */
+  .detail-price {
+    font-size: 23px !important;
+    margin: 7px 0 !important;
+  }
+
+  /* Đường phân cách */
+  .detail-line {
+    margin: 7px 0 !important;
+  }
+
+  /* Khung thông số */
+  .detail-spec {
+    margin-top: 7px !important;
+    padding: 8px 12px !important;
+  }
+
+  .detail-spec h3 {
+    color: blueviolet;
+    font-size: 12px !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 6px !important;
+  }
+
+  /* Các dòng thông số */
+  .detail-spec-row {
+    min-height: 25px !important;
+    padding: 3px 0 !important;
+  }
+
+  .detail-spec-row span,
+  .detail-spec-row strong {
+    font-size: 11px !important;
+  }
+
+  /* Số lượng */
+  .detail-quantity {
+    margin-top: 7px !important;
+    font-size: 12px !important;
+  }
+
+  .quantity-box {
+    transform: scale(0.9);
+    transform-origin: right center;
+  }
+
+  /* Hai nút mua hàng */
+  .detail-buttons {
+    margin-top: 7px !important;
+    gap: 8px !important;
+  }
+
+  .detail-buttons button {
+    min-height: 36px !important;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+  }
+}
+/* =========================================
+   MH MOTO - CĂN TRÁI TIÊU ĐỀ FORM SẢN PHẨM
+========================================= */
+
+/* Nhãn nhập liệu */
+.form-group label,
+.form-group > label,
+.product-form label {
+  display: block;
+  width: 100%;
+  text-align: left !important;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eeeeee;
+}
+
+/* Tiêu đề các mục thông số */
+.product-form h3,
+.product-form h4 {
+  text-align: left !important;
+}
+
+/* Dòng danh mục sản phẩm */
+.product-form .category-info,
+.product-form .thong-tin-danh-muc {
+  text-align: left !important;
+}
+
+/* Phần nhập thông số kỹ thuật */
+.product-form .technical-specs,
+.product-form .thong-so-ky-thuat {
+  text-align: left !important;
+}
+
+/* Các dòng chọn danh mục và ảnh */
+.product-form .form-group {
+  text-align: left !important;
+}
+
+/* Giữ tiêu đề chính ở giữa */
+.product-form > h2 {
+  text-align: center !important;
+}
+
+/* ======================================
+   MH MOTO CHATBOX
+====================================== */
+
+.mh-chat-container {
+  position: fixed;
+  right: 25px;
+  bottom: 25px;
+  z-index: 9999;
+  font-family: Arial, sans-serif;
+}
+
+/* NÚT MỞ CHAT */
+
+.mh-chat-button {
+  width: 62px;
+  height: 62px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #e10600;
+  color: white;
+  font-size: 27px;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(225, 6, 0, 0.5);
+  position: relative;
+  transition: 0.3s;
+}
+
+.mh-chat-button:hover {
+  transform: scale(1.1);
+  background: #ff1a14;
+}
+
+.mh-chat-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mh-chat-badge {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #20d66b;
+  border: 2px solid white;
+  border-radius: 50%;
+  top: 1px;
+  right: 1px;
+}
+
+/* KHUNG CHAT */
+
+.mh-chat-window {
+  width: 360px;
+  height: 510px;
+  background: #111111;
+  border: 1px solid #333333;
+  border-radius: 13px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: mhChatOpen 0.25s ease;
+}
+
+@keyframes mhChatOpen {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* HEADER */
+
+.mh-chat-header {
+  min-height: 75px;
+  background: #080808;
+  border-bottom: 2px solid #e10600;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 12px;
+  color: white;
+}
+
+.mh-chat-logo {
+  font-size: 23px;
+  font-weight: 900;
+  color: white;
+  font-style: italic;
+}
+
+.mh-chat-logo span {
+  color: #e10600;
+}
+
+.mh-chat-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mh-chat-header-info strong {
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.mh-chat-header-info small {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.mh-online,
+.mh-offline {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.mh-online {
+  background: #16d66a;
+}
+
+.mh-offline {
+  background: #888;
+}
+
+.mh-chat-close {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* KHUNG TIN NHẮN */
+
+.mh-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background: #151515;
+}
+
+.mh-chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.mh-chat-messages::-webkit-scrollbar-thumb {
+  background: #e10600;
+  border-radius: 10px;
+}
+
+/* LỜI CHÀO */
+
+.mh-chat-welcome {
+  text-align: center;
+  color: white;
+  padding: 10px 12px 20px;
+}
+
+.mh-bot-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #e10600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  font-size: 23px;
+}
+
+.mh-chat-welcome strong {
+  color: #ff302a;
+  font-size: 14px;
+}
+
+.mh-chat-welcome p {
+  font-size: 12px;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+.mh-chat-welcome small {
+  font-size: 10px;
+  color: #777;
+}
+
+/* TIN NHẮN */
+
+.mh-message {
+  display: flex;
+  margin-bottom: 15px;
+  gap: 8px;
+  max-width: 95%;
+}
+
+.mh-message-customer {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.mh-message-bot {
+  margin-right: auto;
+}
+
+.mh-message-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e10600;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 15px;
+}
+
+.mh-message-content {
+  max-width: 85%;
+}
+
+.mh-message-name {
+  color: #aaa;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.mh-message-customer .mh-message-name {
+  text-align: right;
+}
+
+.mh-message-text {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mh-message-bot .mh-message-text {
+  background: #292929;
+  color: white;
+  border: 1px solid #383838;
+  border-top-left-radius: 2px;
+}
+
+.mh-message-customer .mh-message-text {
+  background: #e10600;
+  color: white;
+  border-top-right-radius: 2px;
+}
+
+.mh-message-time {
+  display: block;
+  font-size: 9px;
+  color: #777;
+  margin-top: 5px;
+}
+
+/* CÂU HỎI GỢI Ý */
+
+.mh-chat-suggestions {
+  display: flex;
+  gap: 6px;
+  padding: 9px 10px;
+  overflow-x: auto;
+  background: #111;
+}
+
+.mh-chat-suggestions button {
+  white-space: nowrap;
+  border: 1px solid #e10600;
+  border-radius: 20px;
+  padding: 6px 10px;
+  background: transparent;
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.mh-chat-suggestions button:hover {
+  background: #e10600;
+}
+
+/* Ô NHẬP */
+
+.mh-chat-input-area {
+  display: flex;
+  padding: 10px;
+  background: #080808;
+  border-top: 1px solid #333;
+  gap: 8px;
+}
+
+.mh-chat-input-area input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #444;
+  outline: none;
+  background: #1b1b1b;
+  color: white;
+  padding: 11px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.mh-chat-input-area input:focus {
+  border-color: #e10600;
+}
+
+.mh-chat-input-area input::placeholder {
+  color: #777;
+}
+
+.mh-chat-send {
+  width: 40px;
+  border: none;
+  border-radius: 7px;
+  background: #e10600;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.mh-chat-send:hover {
+  background: #ff2922;
+}
+
+.mh-chat-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* FOOTER */
+
+.mh-chat-footer {
+  background: #080808;
+  color: #555;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 7px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 480px) {
+  .mh-chat-container {
+    right: 12px;
+    bottom: 15px;
+  }
+
+  .mh-chat-window {
+    position: fixed;
+    width: calc(100vw - 20px);
+    height: min(520px, 75dvh);
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .mh-chat-button {
+    width: 56px;
+    height: 56px;
   }
 }

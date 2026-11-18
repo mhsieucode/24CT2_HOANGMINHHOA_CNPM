@@ -1,5 +1,5 @@
 // ======================================
-// IMPORT THƯ VIỆN
+// 1. IMPORT THƯ VIỆN
 // ======================================
 
 const express = require("express");
@@ -8,26 +8,46 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const dns = require("dns");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 
 require("dotenv").config();
 
 dns.setDefaultResultOrder("ipv4first");
 
+// ======================================
+// 2. KHỞI TẠO SERVER
+// ======================================
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// HTTP SERVER - BẮT BUỘC DÙNG CHO SOCKET.IO
+const httpServer = http.createServer(app);
+
+// SOCKET.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
 // ======================================
-// IMPORT MODEL VÀ ROUTE
+// 3. IMPORT MODEL VÀ ROUTE
 // ======================================
 
 const User = require("./models/user");
 const Product = require("./models/product");
 const Cart = require("./models/cart");
 const Order = require("./models/order");
+
 const productRoutes = require("./routes/productRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 // ======================================
-// CẤU HÌNH SERVER
+// 4. CẤU HÌNH MIDDLEWARE
 // ======================================
 
 app.use(
@@ -38,13 +58,75 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// ======================================
+// 5. KẾT NỐI ROUTE
+// ======================================
+
 app.use("/api/products", productRoutes);
+app.use("/api/chat", chatRoutes);
 
 // ======================================
-// KIỂM TRA TÀI KHOẢN
+// 6. LIVE CHAT - SOCKET.IO
+// ======================================
+
+io.on("connection", (socket) => {
+  console.log("Khách hàng kết nối Socket.IO:", socket.id);
+
+  // Tham gia phòng trò chuyện
+  socket.on("chat:join", (conversationId) => {
+    if (typeof conversationId !== "string" || !conversationId.trim()) {
+      return;
+    }
+
+    socket.join(conversationId);
+
+    console.log("Socket tham gia phòng:", conversationId);
+  });
+
+  // Nhận và chuyển tiếp tin nhắn
+  socket.on("chat:send", (data) => {
+    try {
+      if (!data || typeof data !== "object") {
+        return;
+      }
+
+      const { conversationId, noiDung } = data;
+
+      if (
+        typeof conversationId !== "string" ||
+        !conversationId.trim() ||
+        typeof noiDung !== "string" ||
+        !noiDung.trim()
+      ) {
+        return;
+      }
+
+      const tinNhan = {
+        ...data,
+        noiDung: noiDung.trim(),
+        createdAt: new Date(),
+      };
+
+      // Chuyển tin nhắn đến các thành viên trong phòng
+      io.to(conversationId).emit("chat:receive", tinNhan);
+
+      console.log("Tin nhắn Live Chat:", noiDung);
+    } catch (error) {
+      console.error("Lỗi Socket.IO:", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Ngắt kết nối Socket.IO:", socket.id);
+  });
+});
+
+// ======================================
+// 7. KIỂM TRA TÀI KHOẢN
 // ======================================
 
 async function kiemTraTaiKhoan(req, res, next) {
@@ -77,7 +159,7 @@ async function kiemTraTaiKhoan(req, res, next) {
 }
 
 // ======================================
-// KIỂM TRA ADMIN
+// 8. KIỂM TRA QUYỀN ADMIN
 // ======================================
 
 async function kiemTraAdmin(req, res, next) {
@@ -116,7 +198,7 @@ async function kiemTraAdmin(req, res, next) {
 }
 
 // ======================================
-// TRANG CHỦ API
+// 9. API TRANG CHỦ
 // ======================================
 
 app.get("/", (req, res) => {
@@ -124,7 +206,7 @@ app.get("/", (req, res) => {
 });
 
 // ======================================
-// KIỂM TRA SERVER
+// 10. API KIỂM TRA SERVER
 // ======================================
 
 app.get("/api/health", (req, res) => {
@@ -132,11 +214,12 @@ app.get("/api/health", (req, res) => {
     message: "Server hoạt động bình thường!",
     mongodb:
       mongoose.connection.readyState === 1 ? "Đã kết nối" : "Chưa kết nối",
+    socket: "Đã khởi tạo",
   });
 });
 
 // ======================================
-// ĐĂNG KÝ
+// 11. ĐĂNG KÝ
 // ======================================
 
 app.post("/api/dang-ky", async (req, res) => {
@@ -215,7 +298,7 @@ app.post("/api/dang-ky", async (req, res) => {
 });
 
 // ======================================
-// ĐĂNG NHẬP
+// 12. ĐĂNG NHẬP
 // ======================================
 
 app.post("/api/dang-nhap", async (req, res) => {
@@ -273,7 +356,7 @@ app.post("/api/dang-nhap", async (req, res) => {
 });
 
 // ======================================
-// LẤY GIỎ HÀNG
+// 13. LẤY GIỎ HÀNG
 // ======================================
 
 app.get("/api/cart", kiemTraTaiKhoan, async (req, res) => {
@@ -303,7 +386,7 @@ app.get("/api/cart", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// THÊM SẢN PHẨM VÀO GIỎ
+// 14. THÊM SẢN PHẨM VÀO GIỎ
 // ======================================
 
 app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
@@ -383,7 +466,7 @@ app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// CẬP NHẬT SỐ LƯỢNG GIỎ
+// 15. CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG
 // ======================================
 
 app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
@@ -432,7 +515,6 @@ app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
     }
 
     item.soLuong = soLuong;
-
     await cart.save();
 
     return res.status(200).json({
@@ -449,7 +531,7 @@ app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// XÓA SẢN PHẨM KHỎI GIỎ
+// 16. XÓA SẢN PHẨM KHỎI GIỎ
 // ======================================
 
 app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
@@ -492,7 +574,7 @@ app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// TẠO ĐƠN HÀNG
+// 17. TẠO ĐƠN HÀNG
 // ======================================
 
 app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
@@ -562,19 +644,12 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 
       tongTien += gia * soLuong;
 
-      const hinhAnhSanPham = product.hinhAnh || "";
-
-      console.log("=================================");
-      console.log("SẢN PHẨM ĐẶT HÀNG:", product.tenSanPham);
-      console.log("ẢNH SẢN PHẨM:", hinhAnhSanPham);
-      console.log("=================================");
-
       danhSachSanPham.push({
         productId: product._id,
         tenSanPham: product.tenSanPham,
-        hinhAnh: hinhAnhSanPham,
-        gia: gia,
-        soLuong: soLuong,
+        hinhAnh: product.hinhAnh || "",
+        gia,
+        soLuong,
       });
     }
 
@@ -586,12 +661,10 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
       items: danhSachSanPham,
       tongTien,
       phuongThucThanhToan,
-
       trangThaiThanhToan:
         phuongThucThanhToan === "COD"
           ? "Thanh toán khi nhận hàng"
           : "Chờ xác nhận chuyển khoản",
-
       trangThaiDonHang: "Chờ xác nhận",
     });
 
@@ -609,7 +682,7 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// LẤY ĐƠN HÀNG CỦA TÀI KHOẢN
+// 18. LẤY ĐƠN HÀNG CỦA KHÁCH HÀNG
 // ======================================
 
 app.get("/api/orders", kiemTraTaiKhoan, async (req, res) => {
@@ -631,7 +704,7 @@ app.get("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - DANH SÁCH TÀI KHOẢN
+// 19. ADMIN - DANH SÁCH TÀI KHOẢN
 // ======================================
 
 app.get("/api/admin/users", kiemTraAdmin, async (req, res) => {
@@ -651,7 +724,7 @@ app.get("/api/admin/users", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - ĐỔI QUYỀN TÀI KHOẢN
+// 20. ADMIN - ĐỔI QUYỀN TÀI KHOẢN
 // ======================================
 
 app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
@@ -686,7 +759,6 @@ app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
     }
 
     user.role = role;
-
     await user.save();
 
     return res.status(200).json({
@@ -708,7 +780,7 @@ app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - XÓA TÀI KHOẢN
+// 21. ADMIN - XÓA TÀI KHOẢN
 // ======================================
 
 app.delete("/api/admin/users/:id", kiemTraAdmin, async (req, res) => {
@@ -748,12 +820,14 @@ app.delete("/api/admin/users/:id", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - LẤY DANH SÁCH ĐƠN HÀNG
+// 22. ADMIN - DANH SÁCH ĐƠN HÀNG
 // ======================================
 
 app.get("/api/admin/orders", kiemTraAdmin, async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find().sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
@@ -769,7 +843,7 @@ app.get("/api/admin/orders", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+// 23. ADMIN - CẬP NHẬT TRẠNG THÁI ĐƠN
 // ======================================
 
 app.put("/api/admin/orders/:id/status", kiemTraAdmin, async (req, res) => {
@@ -823,12 +897,11 @@ app.put("/api/admin/orders/:id/status", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// ADMIN - THỐNG KÊ WEBSITE MH MOTO
+// 24. ADMIN - THỐNG KÊ WEBSITE
 // ======================================
 
 app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
   try {
-    // 1. TỔNG DOANH THU ĐƠN HÀNG ĐÃ HOÀN THÀNH
     const ketQuaDoanhThu = await Order.aggregate([
       {
         $match: {
@@ -848,10 +921,8 @@ app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
     const tongDoanhThu =
       ketQuaDoanhThu.length > 0 ? ketQuaDoanhThu[0].tongDoanhThu : 0;
 
-    // 2. ĐẾM SỐ LƯỢNG SẢN PHẨM
     const soLuongSanPham = await Product.countDocuments();
 
-    // 3. ĐẾM SỐ BÀI ĐĂNG SẢN PHẨM
     const soLuongBaiDang = await Product.countDocuments();
 
     return res.status(200).json({
@@ -871,8 +942,7 @@ app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// API KHÔNG TỒN TẠI
-// PHẢI ĐẶT SAU TẤT CẢ API
+// 25. API KHÔNG TỒN TẠI
 // ======================================
 
 app.use((req, res) => {
@@ -882,7 +952,7 @@ app.use((req, res) => {
 });
 
 // ======================================
-// XỬ LÝ LỖI SERVER
+// 26. XỬ LÝ LỖI SERVER
 // ======================================
 
 app.use((err, req, res, next) => {
@@ -894,7 +964,7 @@ app.use((err, req, res, next) => {
 });
 
 // ======================================
-// KHỞI ĐỘNG SERVER
+// 27. KHỞI ĐỘNG SERVER
 // ======================================
 
 async function startServer() {
@@ -911,14 +981,16 @@ async function startServer() {
     console.log("MONGODB KẾT NỐI THÀNH CÔNG!");
     console.log("=================================");
 
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`SERVER: http://localhost:${PORT}`);
       console.log(`HEALTH: http://localhost:${PORT}/api/health`);
+      console.log("SOCKET.IO: ĐANG HOẠT ĐỘNG!");
+      console.log("MH MOTO LIVE CHAT: SẴN SÀNG!");
     });
   } catch (error) {
     console.error("=================================");
     console.error("KHỞI ĐỘNG SERVER THẤT BẠI!");
-    console.error(error.message);
+    console.error(error);
     console.error("=================================");
 
     process.exit(1);

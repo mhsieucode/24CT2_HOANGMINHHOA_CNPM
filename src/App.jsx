@@ -18,7 +18,7 @@ import NhanVien from "./thanhphan/nhanvien";
 import GioHang from "./thanhphan/giohang";
 import QuanLySanPham from "./thanhphan/quanlysanpham";
 import QuanLyDonHang from "./thanhphan/quanlydonhang";
-
+import ChatBox from "./thanhphan/chatbox";
 function App() {
   // ======================================
   // HIỂN THỊ POPUP
@@ -215,6 +215,8 @@ function App() {
           )}
         </>
       )}
+      {/* CHATBOX - CHỈ HIỂN THỊ CHO KHÁCH HÀNG */}
+      <ChatBox />
     </div>
   );
 }

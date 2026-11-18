@@ -2,20 +2,103 @@ import { useEffect, useState } from "react";
 import "../App.css";
 
 // ======================================
-// ĐỊA CHỈ API
+// 1. ĐỊA CHỈ API
 // ======================================
 
 const API = "http://localhost:5000/api/products";
 const SERVER_URL = "http://localhost:5000";
 
 // ======================================
-// DANH SÁCH 4 DANH MỤC SẢN PHẨM
+// 2. DANH MỤC VÀ THÔNG SỐ KỸ THUẬT
 // ======================================
 
 const DANH_MUC = ["Mũ", "Xe Moto", "Bánh xe", "Phụ tùng xe"];
 
+const THONG_SO_THEO_DANH_MUC = {
+  Mũ: ["Thương hiệu", "Loại mũ", "Chất liệu", "Kích thước"],
+
+  "Xe Moto": [
+    "Dung tích xi-lanh",
+    "Công suất",
+    "Loại động cơ",
+    "Hộp số",
+    "Màu sắc",
+  ],
+
+  "Bánh xe": ["Thương hiệu", "Kích thước", "Chất liệu", "Loại lốp"],
+
+  "Phụ tùng xe": [
+    "Thương hiệu",
+    "Mã sản phẩm",
+    "Chất liệu",
+    "Dòng xe tương thích",
+  ],
+};
+
 // ======================================
-// LẤY THÔNG TIN TÀI KHOẢN
+// 3. XỬ LÝ THÔNG SỐ
+// ======================================
+
+const taoThongSoRong = (danhMuc) => {
+  const ketQua = {};
+
+  (THONG_SO_THEO_DANH_MUC[danhMuc] || []).forEach((ten) => {
+    ketQua[ten] = "";
+  });
+
+  return ketQua;
+};
+
+const layThongSoObject = (thongSo) => {
+  if (!thongSo) return {};
+
+  if (typeof thongSo === "string") {
+    try {
+      thongSo = JSON.parse(thongSo);
+    } catch {
+      return {};
+    }
+  }
+
+  if (thongSo instanceof Map) {
+    return Object.fromEntries(thongSo);
+  }
+
+  if (typeof thongSo === "object" && !Array.isArray(thongSo)) {
+    return { ...thongSo };
+  }
+
+  return {};
+};
+
+const chuanHoaTen = (chuoi) => {
+  return String(chuoi || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+};
+
+const layGiaTriThongSo = (thongSo, tenCanTim) => {
+  const object = layThongSoObject(thongSo);
+
+  if (object[tenCanTim] !== undefined) {
+    return String(object[tenCanTim] ?? "");
+  }
+
+  const tenChuan = chuanHoaTen(tenCanTim);
+
+  const keyTimThay = Object.keys(object).find(
+    (key) => chuanHoaTen(key) === tenChuan
+  );
+
+  return keyTimThay !== undefined ? String(object[keyTimThay] ?? "") : "";
+};
+
+// ======================================
+// 4. TÀI KHOẢN
 // ======================================
 
 const layTaiKhoan = () => {
@@ -32,10 +115,6 @@ const layUserId = () => {
   const user = layTaiKhoan();
   return user?._id || user?.id || "";
 };
-
-// ======================================
-// KIỂM TRA QUYỀN ADMIN
-// ======================================
 
 const kiemTraQuyenAdmin = () => {
   const user = layTaiKhoan();
@@ -54,14 +133,17 @@ const kiemTraQuyenAdmin = () => {
 };
 
 // ======================================
-// QUẢN LÝ SẢN PHẨM
+// 5. COMPONENT QUẢN LÝ SẢN PHẨM
 // ======================================
 
 function QuanLySanPham({ dong }) {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
+
   const [hinhAnh, setHinhAnh] = useState(null);
   const [anhCu, setAnhCu] = useState("");
+  const [anhXemTruoc, setAnhXemTruoc] = useState("");
+
   const [dangLuu, setDangLuu] = useState(false);
 
   const [form, setForm] = useState({
@@ -72,8 +154,10 @@ function QuanLySanPham({ dong }) {
     danhMuc: "Xe Moto",
   });
 
+  const [thongSo, setThongSo] = useState(() => taoThongSoRong("Xe Moto"));
+
   // ======================================
-  // LẤY ĐƯỜNG DẪN ẢNH
+  // 6. ĐƯỜNG DẪN ẢNH
   // ======================================
 
   const layDuongDanAnh = (url) => {
@@ -93,7 +177,7 @@ function QuanLySanPham({ dong }) {
   };
 
   // ======================================
-  // LẤY DANH SÁCH SẢN PHẨM
+  // 7. LẤY DANH SÁCH SẢN PHẨM
   // ======================================
 
   const laySanPham = async () => {
@@ -105,12 +189,31 @@ function QuanLySanPham({ dong }) {
         throw new Error(data.message || "Lỗi tải sản phẩm!");
       }
 
-      const danhSach = Array.isArray(data) ? data : data.products || [];
+      const danhSach = Array.isArray(data)
+        ? data
+        : Array.isArray(data.products)
+        ? data.products
+        : [];
+
+      console.log("DANH SÁCH SẢN PHẨM:", danhSach);
+
+      console.table(
+        danhSach.map((item) => ({
+          tenSanPham: item.tenSanPham,
+          danhMuc: item.danhMuc,
+          thongSoKyThuat: JSON.stringify(
+            layThongSoObject(item.thongSoKyThuat || item.thongSo)
+          ),
+        }))
+      );
 
       setProducts(danhSach);
+
+      return danhSach;
     } catch (error) {
       console.error("Lỗi lấy sản phẩm:", error);
-      alert("Không thể tải sản phẩm!");
+      alert(error.message || "Không thể tải sản phẩm!");
+      return [];
     }
   };
 
@@ -119,7 +222,7 @@ function QuanLySanPham({ dong }) {
   }, []);
 
   // ======================================
-  // NHẬP DỮ LIỆU
+  // 8. THAY ĐỔI THÔNG TIN SẢN PHẨM
   // ======================================
 
   const handleChange = (e) => {
@@ -129,10 +232,21 @@ function QuanLySanPham({ dong }) {
       ...prev,
       [name]: value,
     }));
+
+    if (name === "danhMuc") {
+      setThongSo(taoThongSoRong(value));
+    }
+  };
+
+  const handleThongSoChange = (ten, giaTri) => {
+    setThongSo((prev) => ({
+      ...prev,
+      [ten]: giaTri,
+    }));
   };
 
   // ======================================
-  // CHỌN ẢNH
+  // 9. CHỌN ẢNH
   // ======================================
 
   const handleImageChange = (e) => {
@@ -155,8 +269,23 @@ function QuanLySanPham({ dong }) {
     setHinhAnh(file);
   };
 
+  useEffect(() => {
+    if (!hinhAnh) {
+      setAnhXemTruoc("");
+      return;
+    }
+
+    const url = URL.createObjectURL(hinhAnh);
+
+    setAnhXemTruoc(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [hinhAnh]);
+
   // ======================================
-  // THÊM HOẶC CẬP NHẬT SẢN PHẨM
+  // 10. THÊM VÀ CẬP NHẬT SẢN PHẨM
   // ======================================
 
   const handleSubmit = async (e) => {
@@ -166,12 +295,49 @@ function QuanLySanPham({ dong }) {
 
     if (!kiemTraQuyenAdmin()) return;
 
+    if (!form.tenSanPham.trim()) {
+      alert("Vui lòng nhập tên sản phẩm!");
+      return;
+    }
+
+    if (
+      form.gia === "" ||
+      !Number.isFinite(Number(form.gia)) ||
+      Number(form.gia) < 0
+    ) {
+      alert("Vui lòng nhập giá sản phẩm hợp lệ!");
+      return;
+    }
+
+    if (!Number.isFinite(Number(form.soLuong)) || Number(form.soLuong) < 0) {
+      alert("Vui lòng nhập số lượng hợp lệ!");
+      return;
+    }
+
     if (!DANH_MUC.includes(form.danhMuc)) {
       alert("Vui lòng chọn danh mục hợp lệ!");
       return;
     }
 
+    // Lấy các thông số có nhập dữ liệu
+    const danhSachTen = THONG_SO_THEO_DANH_MUC[form.danhMuc] || [];
+
+    const thongSoHopLe = {};
+
+    danhSachTen.forEach((ten) => {
+      const giaTri = String(thongSo[ten] ?? "").trim();
+
+      if (giaTri !== "") {
+        thongSoHopLe[ten] = giaTri;
+      }
+    });
+
     const userId = layUserId();
+
+    if (!userId) {
+      alert("Không tìm thấy tài khoản đăng nhập!");
+      return;
+    }
 
     try {
       setDangLuu(true);
@@ -179,10 +345,15 @@ function QuanLySanPham({ dong }) {
       const formData = new FormData();
 
       formData.append("tenSanPham", form.tenSanPham.trim());
-      formData.append("gia", form.gia);
+      formData.append("gia", String(form.gia));
       formData.append("moTa", form.moTa);
-      formData.append("soLuong", form.soLuong);
+      formData.append("soLuong", String(form.soLuong));
       formData.append("danhMuc", form.danhMuc);
+
+      // Gửi đồng thời hai tên trường để tương thích
+      formData.append("thongSoKyThuat", JSON.stringify(thongSoHopLe));
+
+      formData.append("thongSo", JSON.stringify(thongSoHopLe));
 
       if (hinhAnh) {
         formData.append("hinhAnh", hinhAnh);
@@ -202,6 +373,8 @@ function QuanLySanPham({ dong }) {
 
       const data = await response.json();
 
+      console.log("PHẢN HỒI SERVER:", data);
+
       if (!response.ok) {
         throw new Error(data.message || "Lỗi lưu sản phẩm!");
       }
@@ -213,6 +386,7 @@ function QuanLySanPham({ dong }) {
       );
 
       handleCancel();
+
       await laySanPham();
     } catch (error) {
       console.error("Lỗi lưu sản phẩm:", error);
@@ -223,11 +397,25 @@ function QuanLySanPham({ dong }) {
   };
 
   // ======================================
-  // CHỌN SẢN PHẨM ĐỂ SỬA
+  // 11. SỬA SẢN PHẨM
   // ======================================
 
   const handleEdit = (product) => {
     if (!kiemTraQuyenAdmin()) return;
+
+    const danhMuc = DANH_MUC.includes(product.danhMuc)
+      ? product.danhMuc
+      : "Xe Moto";
+
+    const thongSoCu = layThongSoObject(
+      product.thongSoKyThuat || product.thongSo
+    );
+
+    const thongSoMoi = taoThongSoRong(danhMuc);
+
+    Object.keys(thongSoMoi).forEach((ten) => {
+      thongSoMoi[ten] = layGiaTriThongSo(thongSoCu, ten);
+    });
 
     setEditingId(product._id);
 
@@ -236,9 +424,10 @@ function QuanLySanPham({ dong }) {
       gia: product.gia ?? "",
       moTa: product.moTa || "",
       soLuong: product.soLuong ?? 0,
-      danhMuc: DANH_MUC.includes(product.danhMuc) ? product.danhMuc : "Xe Moto",
+      danhMuc,
     });
 
+    setThongSo(thongSoMoi);
     setAnhCu(product.hinhAnh || "");
     setHinhAnh(null);
 
@@ -249,7 +438,7 @@ function QuanLySanPham({ dong }) {
   };
 
   // ======================================
-  // XÓA SẢN PHẨM
+  // 12. XÓA SẢN PHẨM
   // ======================================
 
   const handleDelete = async (id) => {
@@ -283,7 +472,7 @@ function QuanLySanPham({ dong }) {
   };
 
   // ======================================
-  // HỦY SỬA SẢN PHẨM
+  // 13. HỦY VÀ LÀM MỚI FORM
   // ======================================
 
   const handleCancel = () => {
@@ -298,32 +487,22 @@ function QuanLySanPham({ dong }) {
       soLuong: 0,
       danhMuc: "Xe Moto",
     });
+
+    setThongSo(taoThongSoRong("Xe Moto"));
   };
 
   // ======================================
-  // ẢNH XEM TRƯỚC
-  // ======================================
-
-  const anhXemTruoc = hinhAnh ? URL.createObjectURL(hinhAnh) : "";
-
-  useEffect(() => {
-    return () => {
-      if (anhXemTruoc) {
-        URL.revokeObjectURL(anhXemTruoc);
-      }
-    };
-  }, [anhXemTruoc]);
-
-  // ======================================
-  // KIỂM TRA TÀI KHOẢN
+  // 14. KIỂM TRA QUYỀN
   // ======================================
 
   const user = layTaiKhoan();
 
   const coQuyenAdmin = user && (user._id || user.id) && user.role === "admin";
 
+  const danhSachThongSo = THONG_SO_THEO_DANH_MUC[form.danhMuc] || [];
+
   // ======================================
-  // GIAO DIỆN
+  // 15. GIAO DIỆN
   // ======================================
 
   return (
@@ -337,13 +516,9 @@ function QuanLySanPham({ dong }) {
         </div>
       )}
 
-      {/* FORM SẢN PHẨM */}
-
       {coQuyenAdmin && (
         <form onSubmit={handleSubmit} className="product-form">
           <h2>{editingId ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}</h2>
-
-          {/* TÊN SẢN PHẨM */}
 
           <input
             name="tenSanPham"
@@ -352,8 +527,6 @@ function QuanLySanPham({ dong }) {
             onChange={handleChange}
             required
           />
-
-          {/* GIÁ SẢN PHẨM */}
 
           <input
             name="gia"
@@ -365,8 +538,6 @@ function QuanLySanPham({ dong }) {
             required
           />
 
-          {/* SỐ LƯỢNG */}
-
           <input
             name="soLuong"
             type="number"
@@ -375,8 +546,6 @@ function QuanLySanPham({ dong }) {
             onChange={handleChange}
             min="0"
           />
-
-          {/* CHỌN DANH MỤC */}
 
           <label htmlFor="danhMuc">Chọn danh mục sản phẩm:</label>
 
@@ -394,15 +563,11 @@ function QuanLySanPham({ dong }) {
             ))}
           </select>
 
-          {/* CHỌN ẢNH */}
-
           <label>Chọn ảnh sản phẩm từ máy tính:</label>
 
           <input type="file" accept="image/*" onChange={handleImageChange} />
 
-          {/* ẢNH XEM TRƯỚC */}
-
-          {hinhAnh && (
+          {hinhAnh && anhXemTruoc && (
             <div className="product-image-preview">
               <p>Ảnh vừa chọn:</p>
 
@@ -418,8 +583,6 @@ function QuanLySanPham({ dong }) {
               />
             </div>
           )}
-
-          {/* ẢNH CŨ */}
 
           {!hinhAnh && anhCu && (
             <div className="product-image-preview">
@@ -442,8 +605,6 @@ function QuanLySanPham({ dong }) {
             </div>
           )}
 
-          {/* MÔ TẢ */}
-
           <textarea
             name="moTa"
             placeholder="Mô tả sản phẩm"
@@ -451,7 +612,28 @@ function QuanLySanPham({ dong }) {
             onChange={handleChange}
           />
 
-          {/* NÚT LƯU */}
+          {/* THÔNG SỐ KỸ THUẬT */}
+
+          <div className="thong-so-form">
+            <h3>Thông số kỹ thuật sản phẩm</h3>
+
+            <p>
+              Danh mục: <strong>{form.danhMuc}</strong>
+            </p>
+
+            {danhSachThongSo.map((ten) => (
+              <div className="thong-so-row" key={ten}>
+                <label>{ten}:</label>
+
+                <input
+                  type="text"
+                  placeholder={`Nhập ${ten.toLowerCase()}`}
+                  value={thongSo[ten] || ""}
+                  onChange={(e) => handleThongSoChange(ten, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
 
           <button type="submit" disabled={dangLuu}>
             {dangLuu ? "ĐANG LƯU..." : editingId ? "CẬP NHẬT" : "THÊM SẢN PHẨM"}
@@ -478,61 +660,88 @@ function QuanLySanPham({ dong }) {
               <th>Giá</th>
               <th>Số lượng</th>
               <th>Danh mục</th>
+              <th>Thông số</th>
               {coQuyenAdmin && <th>Thao tác</th>}
             </tr>
           </thead>
 
           <tbody>
-            {products.map((product) => (
-              <tr key={product._id}>
-                <td>
-                  {product.hinhAnh ? (
-                    <img
-                      src={layDuongDanAnh(product.hinhAnh)}
-                      alt={product.tenSanPham}
-                      style={{
-                        width: "100px",
-                        height: "70px",
-                        objectFit: "cover",
-                      }}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.alt = "Ảnh bị lỗi";
-                      }}
-                    />
-                  ) : (
-                    "Chưa có ảnh"
-                  )}
-                </td>
+            {products.map((product) => {
+              const thongSoSanPham = layThongSoObject(
+                product.thongSoKyThuat || product.thongSo
+              );
 
-                <td>{product.tenSanPham}</td>
+              const tenThongSo = THONG_SO_THEO_DANH_MUC[product.danhMuc] || [];
 
-                <td>{Number(product.gia).toLocaleString("vi-VN")} đ</td>
+              const cacThongSo = tenThongSo
+                .map((ten) => [ten, layGiaTriThongSo(thongSoSanPham, ten)])
+                .filter(([, giaTri]) => String(giaTri).trim() !== "");
 
-                <td>{product.soLuong}</td>
-
-                <td>{product.danhMuc}</td>
-
-                {coQuyenAdmin && (
+              return (
+                <tr key={product._id}>
                   <td>
-                    <button type="button" onClick={() => handleEdit(product)}>
-                      Sửa
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(product._id)}
-                    >
-                      Xóa
-                    </button>
+                    {product.hinhAnh ? (
+                      <img
+                        src={layDuongDanAnh(product.hinhAnh)}
+                        alt={product.tenSanPham}
+                        style={{
+                          width: "100px",
+                          height: "70px",
+                          objectFit: "cover",
+                        }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.alt = "Ảnh bị lỗi";
+                        }}
+                      />
+                    ) : (
+                      "Chưa có ảnh"
+                    )}
                   </td>
-                )}
-              </tr>
-            ))}
+
+                  <td>{product.tenSanPham}</td>
+
+                  <td>{Number(product.gia).toLocaleString("vi-VN")} đ</td>
+
+                  <td>{product.soLuong}</td>
+
+                  <td>{product.danhMuc}</td>
+
+                  <td>
+                    {cacThongSo.length > 0 ? (
+                      <div>
+                        {cacThongSo.map(([ten, giaTri]) => (
+                          <div key={ten}>
+                            <strong>{ten}:</strong> {giaTri}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      "Chưa có"
+                    )}
+                  </td>
+
+                  {coQuyenAdmin && (
+                    <td>
+                      <button type="button" onClick={() => handleEdit(product)}>
+                        Sửa
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(product._id)}
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
 
             {products.length === 0 && (
               <tr>
-                <td colSpan={coQuyenAdmin ? "6" : "5"}>Chưa có sản phẩm nào</td>
+                <td colSpan={coQuyenAdmin ? "7" : "6"}>Chưa có sản phẩm nào</td>
               </tr>
             )}
           </tbody>

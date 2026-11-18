@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
+    // ======================================
+    // 1. THÔNG TIN CƠ BẢN
+    // ======================================
+
     tenSanPham: {
       type: String,
       required: [true, "Vui lòng nhập tên sản phẩm"],
@@ -32,13 +36,35 @@ const productSchema = new mongoose.Schema(
 
     danhMuc: {
       type: String,
-      default: "Xe moto",
+      default: "Xe Moto",
+    },
+
+    // ======================================
+    // 2. THÔNG SỐ KỸ THUẬT
+    // ======================================
+
+    // Trường thông số cũ, giữ lại để tương thích
+    thongSo: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+
+    // Trường thông số mới
+    thongSoKyThuat: {
+      type: Map,
+      of: String,
+      default: {},
     },
   },
   {
     timestamps: true,
   }
 );
+
+// ======================================
+// 3. MODEL PRODUCT
+// ======================================
 
 module.exports =
   mongoose.models.Product || mongoose.model("Product", productSchema);

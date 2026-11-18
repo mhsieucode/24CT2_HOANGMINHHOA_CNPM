@@ -1,5 +1,5 @@
 import React from "react";
-import ThanhTimKiem from "./ThanhTimKiem";
+import ThanhTimKiem from "./thanhtimkiem";
 import "../App.css";
 
 function ThanhTimKiem({ tuKhoa, setTuKhoa }) {
