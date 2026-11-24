@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-const Message = require("../models/massage");
+const Message = require("../models/message");
 const Product = require("../models/product");
+const User = require("../models/user");
+
+const { kiemTraTaiKhoan, kiemTraAdmin } = require("../middleware/auth");
 
 // ======================================
 // 1. CHUẨN HÓA NỘI DUNG
@@ -315,10 +318,45 @@ async function traLoiChatBot(noiDung) {
 }
 
 // ======================================
-// 7. LẤY LỊCH SỬ CHAT
+// 7. KIỂM TRA QUYỀN SỞ HỮU CUỘC TRÒ CHUYỆN
 // ======================================
 
-router.get("/history/:conversationId", async (req, res) => {
+const kiemTraCuocTroChuyen = async (conversationId, ownerId) => {
+  const messages = await Message.find({
+    conversationId,
+  })
+    .select("ownerId")
+    .lean();
+
+  if (messages.length === 0) {
+    return {
+      hopLe: true,
+      daTonTai: false,
+    };
+  }
+
+  const coTinNhanKhongChuSoHuu = messages.some(
+    (message) => !message.ownerId || String(message.ownerId) !== String(ownerId)
+  );
+
+  if (coTinNhanKhongChuSoHuu) {
+    return {
+      hopLe: false,
+      daTonTai: true,
+    };
+  }
+
+  return {
+    hopLe: true,
+    daTonTai: true,
+  };
+};
+
+// ======================================
+// 8. KHÁCH HÀNG - LẤY LỊCH SỬ CHAT
+// ======================================
+
+router.get("/history/:conversationId", kiemTraTaiKhoan, async (req, res) => {
   try {
     const conversationId = String(req.params.conversationId || "").trim();
 
@@ -328,9 +366,22 @@ router.get("/history/:conversationId", async (req, res) => {
       });
     }
 
-    const messages = await Message.find({
+    let dieuKien = {
       conversationId,
-    })
+    };
+
+    // Khách hàng chỉ được xem tin nhắn của mình
+    if (req.user.role !== "admin") {
+      if (req.user.role !== "customer") {
+        return res.status(403).json({
+          message: "Bạn không có quyền xem cuộc trò chuyện!",
+        });
+      }
+
+      dieuKien.ownerId = req.user._id;
+    }
+
+    const messages = await Message.find(dieuKien)
       .sort({ createdAt: 1 })
       .limit(100)
       .lean();
@@ -346,27 +397,38 @@ router.get("/history/:conversationId", async (req, res) => {
 });
 
 // ======================================
-// 8. GỬI TIN NHẮN VÀ NHẬN TRẢ LỜI TỰ ĐỘNG
+// 9. KHÁCH HÀNG - GỬI TIN NHẮN
 // ======================================
 
-router.post("/send", async (req, res) => {
+router.post("/send", kiemTraTaiKhoan, async (req, res) => {
   try {
+    if (req.user.role !== "customer") {
+      return res.status(403).json({
+        message: "Chỉ khách hàng mới được gửi tin nhắn tại đây!",
+      });
+    }
+
     const { conversationId, content } = req.body;
 
-    if (!conversationId || !content || !String(content).trim()) {
+    if (
+      typeof conversationId !== "string" ||
+      typeof content !== "string" ||
+      !conversationId.trim() ||
+      !content.trim()
+    ) {
       return res.status(400).json({
         message: "Vui lòng nhập nội dung tin nhắn!",
       });
     }
 
-    if (String(content).length > 2000) {
+    if (content.trim().length > 2000) {
       return res.status(400).json({
         message: "Tin nhắn không được vượt quá 2000 ký tự!",
       });
     }
 
-    const id = String(conversationId).trim();
-    const noiDung = String(content).trim();
+    const id = conversationId.trim();
+    const noiDung = content.trim();
 
     if (id.length > 100) {
       return res.status(400).json({
@@ -374,12 +436,40 @@ router.post("/send", async (req, res) => {
       });
     }
 
+    // KIỂM TRA CUỘC TRÒ CHUYỆN CÓ THUỘC KHÁCH HÀNG KHÔNG
+    const kiemTra = await kiemTraCuocTroChuyen(id, req.user._id);
+
+    if (!kiemTra.hopLe) {
+      return res.status(403).json({
+        message: "Bạn không có quyền sử dụng cuộc trò chuyện này!",
+      });
+    }
+
     // LƯU TIN NHẮN KHÁCH HÀNG
     const userMessage = await Message.create({
       conversationId: id,
+      ownerId: req.user._id,
       sender: "user",
       content: noiDung,
     });
+
+    const io = req.app.get("io");
+
+    // PHÁT TIN NHẮN ĐẾN PHÒNG CHAT NẾU ĐÃ KẾT NỐI
+    if (io) {
+      io.to(id).emit("chat:receive", userMessage);
+
+      // THÔNG BÁO CHO ADMIN CÓ KHÁCH HÀNG MỚI NHẮN
+      io.to("mh_moto_admin").emit("chat:new-message", {
+        conversationId: id,
+        message: userMessage,
+        customer: {
+          _id: req.user._id,
+          hoTen: req.user.hoTen,
+          email: req.user.email,
+        },
+      });
+    }
 
     // CHATBOT TỰ ĐỘNG XỬ LÝ
     const reply = await traLoiChatBot(noiDung);
@@ -387,9 +477,15 @@ router.post("/send", async (req, res) => {
     // LƯU CÂU TRẢ LỜI CHATBOT
     const botMessage = await Message.create({
       conversationId: id,
+      ownerId: req.user._id,
       sender: "bot",
       content: reply,
     });
+
+    // PHÁT CÂU TRẢ LỜI CHATBOT ĐẾN KHÁCH HÀNG
+    if (io) {
+      io.to(id).emit("chat:receive", botMessage);
+    }
 
     return res.status(200).json({
       message: "Gửi tin nhắn thành công!",
@@ -407,7 +503,169 @@ router.post("/send", async (req, res) => {
 });
 
 // ======================================
-// 9. XUẤT HÀM CHATBOT CHO SOCKET.IO
+// 10. ADMIN - DANH SÁCH CUỘC TRÒ CHUYỆN
+// ======================================
+
+router.get("/admin/conversations", kiemTraAdmin, async (req, res) => {
+  try {
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          ownerId: {
+            $ne: null,
+          },
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $group: {
+          _id: "$conversationId",
+          ownerId: {
+            $first: "$ownerId",
+          },
+          lastMessage: {
+            $first: "$content",
+          },
+          lastSender: {
+            $first: "$sender",
+          },
+          updatedAt: {
+            $first: "$createdAt",
+          },
+        },
+      },
+      {
+        $sort: {
+          updatedAt: -1,
+        },
+      },
+    ]);
+
+    const ownerIds = [
+      ...new Set(conversations.map((item) => String(item.ownerId))),
+    ];
+
+    const users = await User.find({
+      _id: {
+        $in: ownerIds,
+      },
+    }).select("hoTen email");
+
+    const userMap = new Map(
+      users.map((user) => [
+        String(user._id),
+        {
+          _id: user._id,
+          hoTen: user.hoTen,
+          email: user.email,
+        },
+      ])
+    );
+
+    const ketQua = conversations.map((item) => ({
+      conversationId: item._id,
+      ownerId: item.ownerId,
+      customer: userMap.get(String(item.ownerId)) || null,
+      lastMessage: item.lastMessage,
+      lastSender: item.lastSender,
+      updatedAt: item.updatedAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      conversations: ketQua,
+    });
+  } catch (error) {
+    console.error("LỖI LẤY DANH SÁCH CUỘC TRÒ CHUYỆN:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Không thể lấy danh sách cuộc trò chuyện!",
+    });
+  }
+});
+
+// ======================================
+// 11. ADMIN - TRẢ LỜI KHÁCH HÀNG
+// ======================================
+
+router.post("/admin/reply", kiemTraAdmin, async (req, res) => {
+  try {
+    const { conversationId, content } = req.body;
+
+    if (
+      typeof conversationId !== "string" ||
+      typeof content !== "string" ||
+      !conversationId.trim() ||
+      !content.trim()
+    ) {
+      return res.status(400).json({
+        message: "Vui lòng nhập nội dung phản hồi!",
+      });
+    }
+
+    const id = conversationId.trim();
+    const noiDung = content.trim();
+
+    if (id.length > 100 || noiDung.length > 2000) {
+      return res.status(400).json({
+        message: "Mã cuộc trò chuyện hoặc nội dung không hợp lệ!",
+      });
+    }
+
+    // TÌM CUỘC TRÒ CHUYỆN VÀ CHỦ SỞ HỮU
+    const tinNhanCu = await Message.findOne({
+      conversationId: id,
+      ownerId: {
+        $ne: null,
+      },
+    }).sort({
+      createdAt: 1,
+    });
+
+    if (!tinNhanCu) {
+      return res.status(404).json({
+        message: "Không tìm thấy cuộc trò chuyện!",
+      });
+    }
+
+    const ownerId = tinNhanCu.ownerId;
+
+    // LƯU TIN NHẮN ADMIN
+    const adminMessage = await Message.create({
+      conversationId: id,
+      ownerId,
+      sender: "admin",
+      content: noiDung,
+    });
+
+    const io = req.app.get("io");
+
+    // GỬI TIN NHẮN ĐẾN KHÁCH HÀNG
+    if (io) {
+      io.to(id).emit("chat:receive", adminMessage);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã gửi phản hồi cho khách hàng!",
+      adminMessage,
+    });
+  } catch (error) {
+    console.error("LỖI ADMIN TRẢ LỜI CHAT:", error);
+
+    return res.status(500).json({
+      message: "Không thể gửi phản hồi!",
+    });
+  }
+});
+
+// ======================================
+// 12. XUẤT HÀM CHATBOT
 // ======================================
 
 router.traLoiChatBot = traLoiChatBot;

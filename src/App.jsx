@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 import DauTrang from "./thanhphan/dautrang";
@@ -17,8 +17,14 @@ import Admin from "./thanhphan/admin";
 import NhanVien from "./thanhphan/nhanvien";
 import GioHang from "./thanhphan/giohang";
 import QuanLySanPham from "./thanhphan/quanlysanpham";
-import QuanLyDonHang from "./thanhphan/quanlydonhang";
 import ChatBox from "./thanhphan/chatbox";
+
+// ======================================
+// ĐỊA CHỈ BACKEND
+// ======================================
+
+const SERVER_URL = "http://localhost:5000";
+
 function App() {
   // ======================================
   // HIỂN THỊ POPUP
@@ -34,20 +40,19 @@ function App() {
   const [hienGioHang, setHienGioHang] = useState(false);
 
   // ======================================
-  // HIỂN THỊ QUẢN LÝ SẢN PHẨM
+  // QUẢN LÝ SẢN PHẨM
   // ======================================
 
   const [hienQuanLySanPham, setHienQuanLySanPham] = useState(false);
 
   // ======================================
-  // LỌC SẢN PHẨM THEO DANH MỤC
+  // LỌC SẢN PHẨM
   // ======================================
 
   const [danhMucDangChon, setDanhMucDangChon] = useState("");
 
   const chonDanhMuc = (danhMuc) => {
     setDanhMucDangChon(danhMuc);
-
     setHienGioHang(false);
 
     setTimeout(() => {
@@ -59,54 +64,161 @@ function App() {
   };
 
   // ======================================
-  // KIỂM TRA USER ĐÃ ĐĂNG NHẬP
+  // THÔNG TIN NGƯỜI DÙNG
+  // XÁC THỰC BẰNG JWT COOKIE
   // ======================================
 
-  const [user, setUser] = useState(() => {
-    const userDaLuu = localStorage.getItem("user");
+  const [user, setUser] = useState(null);
+  const [dangKiemTraPhien, setDangKiemTraPhien] = useState(true);
 
-    if (userDaLuu) {
+  // ======================================
+  // KIỂM TRA PHIÊN ĐĂNG NHẬP
+  // ======================================
+
+  useEffect(() => {
+    let conHoatDong = true;
+
+    const kiemTraPhien = async () => {
       try {
-        return JSON.parse(userDaLuu);
+        const response = await fetch(`${SERVER_URL}/api/auth/me`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (!conHoatDong) return;
+
+        if (response.ok && data.user) {
+          setUser(data.user);
+
+          console.log("ĐÃ KHÔI PHỤC PHIÊN JWT:", data.user);
+        } else {
+          setUser(null);
+          console.log("CHƯA CÓ PHIÊN ĐĂNG NHẬP HỢP LỆ");
+        }
       } catch (error) {
-        return null;
+        console.error("LỖI KIỂM TRA PHIÊN:", error);
+
+        if (conHoatDong) {
+          setUser(null);
+        }
+      } finally {
+        if (conHoatDong) {
+          setDangKiemTraPhien(false);
+        }
       }
-    }
+    };
 
-    return null;
-  });
+    kiemTraPhien();
+
+    return () => {
+      conHoatDong = false;
+    };
+  }, []);
 
   // ======================================
-  // ĐĂNG XUẤT
+  // ĐĂNG NHẬP THÀNH CÔNG
   // ======================================
 
-  const xuLyDangXuat = () => {
-    localStorage.removeItem("user");
-    setUser(null);
+  const xuLyDangNhapThanhCong = (userData) => {
+    if (!userData) return;
+
+    setUser(userData);
+
+    setHienDangNhap(false);
+    setHienDangKy(false);
+
     setHienGioHang(false);
     setHienQuanLySanPham(false);
-    alert("Đã đăng xuất!");
+
+    console.log("TÀI KHOẢN ĐÃ ĐĂNG NHẬP:", userData);
   };
 
   // ======================================
-  // ĐÓNG GIỎ HÀNG
+  // ĐĂNG XUẤT BẰNG JWT COOKIE
+  // ======================================
+
+  const xuLyDangXuat = async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/dang-xuat`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Đăng xuất thất bại!");
+        return;
+      }
+
+      // Xóa trạng thái tài khoản trên giao diện
+      setUser(null);
+
+      setHienGioHang(false);
+      setHienQuanLySanPham(false);
+      setHienDangNhap(false);
+      setHienDangKy(false);
+
+      setDanhMucDangChon("");
+
+      alert("Đã đăng xuất thành công!");
+    } catch (error) {
+      console.error("LỖI ĐĂNG XUẤT:", error);
+      alert("Không thể kết nối đến server để đăng xuất!");
+    }
+  };
+
+  // ======================================
+  // MỞ / ĐÓNG GIỎ HÀNG
   // ======================================
 
   const dongGioHang = () => {
     setHienGioHang(false);
   };
 
-  // ======================================
-  // MỞ GIỎ HÀNG
-  // ======================================
-
   const moGioHang = () => {
     setHienGioHang(true);
   };
 
+  // ======================================
+  // ĐỢI KIỂM TRA JWT
+  // ======================================
+
+  if (dangKiemTraPhien) {
+    return (
+      <div className="web-layout">
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "#050505",
+            color: "#e10600",
+            fontSize: "18px",
+            fontWeight: "bold",
+            letterSpacing: "2px",
+            textAlign: "center",
+            padding: "20px",
+          }}
+        >
+          MH MOTO - ĐANG KIỂM TRA PHIÊN ĐĂNG NHẬP...
+        </div>
+      </div>
+    );
+  }
+
+  // ======================================
+  // GIAO DIỆN CHÍNH
+  // ======================================
+
   return (
     <div className="web-layout">
-      {/* ADMIN */}
+      {/* ======================================
+          ADMIN
+      ====================================== */}
 
       {user?.role === "admin" ? (
         hienQuanLySanPham ? (
@@ -119,11 +231,15 @@ function App() {
           />
         )
       ) : user?.role === "staff" ? (
-        /* NHÂN VIÊN */
+        /* ======================================
+           NHÂN VIÊN
+        ====================================== */
 
         <NhanVien user={user} dangXuat={xuLyDangXuat} />
       ) : (
-        /* KHÁCH HÀNG / CHƯA ĐĂNG NHẬP */
+        /* ======================================
+           KHÁCH HÀNG / CHƯA ĐĂNG NHẬP
+        ====================================== */
 
         <>
           <Poster />
@@ -146,7 +262,7 @@ function App() {
               <GioHang dong={dongGioHang} />
             ) : (
               <>
-                {/* TRANG CHỦ VÀ DANH MỤC */}
+                {/* TRANG CHỦ */}
 
                 <div id="trangchu">
                   <TrinhChieu />
@@ -154,7 +270,7 @@ function App() {
                   <DanhMuc onChonDanhMuc={chonDanhMuc} />
                 </div>
 
-                {/* DANH SÁCH SẢN PHẨM */}
+                {/* SẢN PHẨM */}
 
                 <div id="sanpham">
                   <SanPham
@@ -168,6 +284,8 @@ function App() {
                 <div id="gioithieu">
                   <GioiThieu />
                 </div>
+
+                {/* ĐÁNH GIÁ */}
 
                 <DanhGia />
 
@@ -189,16 +307,7 @@ function App() {
                 setHienDangNhap(false);
                 setHienDangKy(true);
               }}
-              dangNhapThanhCong={(userData) => {
-                console.log("USER ĐĂNG NHẬP:", userData);
-                console.log("ROLE:", userData.role);
-
-                setUser(userData);
-
-                localStorage.setItem("user", JSON.stringify(userData));
-
-                setHienDangNhap(false);
-              }}
+              dangNhapThanhCong={xuLyDangNhapThanhCong}
             />
           )}
 
@@ -215,7 +324,11 @@ function App() {
           )}
         </>
       )}
-      {/* CHATBOX - CHỈ HIỂN THỊ CHO KHÁCH HÀNG */}
+
+      {/* ======================================
+          LIVE CHAT
+      ====================================== */}
+
       <ChatBox />
     </div>
   );

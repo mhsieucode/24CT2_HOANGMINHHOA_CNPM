@@ -1,7 +1,6 @@
 // ======================================
 // 1. IMPORT THƯ VIỆN
 // ======================================
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -10,6 +9,14 @@ const dns = require("dns");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+
+const {
+  kiemTraTaiKhoan,
+  kiemTraAdmin,
+  kiemTraQuanLy,
+} = require("./middleware/auth");
 
 require("dotenv").config();
 
@@ -18,14 +25,13 @@ dns.setDefaultResultOrder("ipv4first");
 // ======================================
 // 2. KHỞI TẠO SERVER
 // ======================================
-
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// HTTP SERVER - BẮT BUỘC DÙNG CHO SOCKET.IO
 const httpServer = http.createServer(app);
 
-// SOCKET.IO
+// ======================================
+// 3. SOCKET.IO
+// ======================================
 const io = new Server(httpServer, {
   cors: {
     origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -34,22 +40,23 @@ const io = new Server(httpServer, {
   },
 });
 
-// ======================================
-// 3. IMPORT MODEL VÀ ROUTE
-// ======================================
+app.set("io", io);
 
+// ======================================
+// 4. IMPORT MODEL VÀ ROUTE
+// ======================================
 const User = require("./models/user");
 const Product = require("./models/product");
 const Cart = require("./models/cart");
 const Order = require("./models/order");
+const Message = require("./models/message");
 
 const productRoutes = require("./routes/productRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 // ======================================
-// 4. CẤU HÌNH MIDDLEWARE
+// 5. CẤU HÌNH MIDDLEWARE
 // ======================================
-
 app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -59,156 +66,143 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ======================================
-// 5. KẾT NỐI ROUTE
+// 6. KẾT NỐI ROUTE
 // ======================================
-
 app.use("/api/products", productRoutes);
 app.use("/api/chat", chatRoutes);
 
 // ======================================
-// 6. LIVE CHAT - SOCKET.IO
+// 7. LIVE CHAT - SOCKET.IO XÁC THỰC JWT
 // ======================================
 
-io.on("connection", (socket) => {
-  console.log("Khách hàng kết nối Socket.IO:", socket.id);
+function layTokenTuCookie(cookieHeader) {
+  if (!cookieHeader) return null;
 
-  // Tham gia phòng trò chuyện
-  socket.on("chat:join", (conversationId) => {
-    if (typeof conversationId !== "string" || !conversationId.trim()) {
-      return;
+  const cookies = cookieHeader.split(";");
+
+  const cookie = cookies.find((item) =>
+    item.trim().startsWith("mh_moto_token=")
+  );
+
+  if (!cookie) return null;
+
+  return decodeURIComponent(cookie.trim().substring("mh_moto_token=".length));
+}
+
+io.use(async (socket, next) => {
+  try {
+    const token = layTokenTuCookie(socket.handshake.headers.cookie);
+
+    if (!token) {
+      return next(new Error("Bạn cần đăng nhập để sử dụng Live Chat!"));
     }
 
-    socket.join(conversationId);
+    if (!process.env.JWT_SECRET) {
+      return next(new Error("Máy chủ chưa cấu hình JWT_SECRET!"));
+    }
 
-    console.log("Socket tham gia phòng:", conversationId);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.sub) {
+      return next(new Error("Phiên đăng nhập không hợp lệ!"));
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      return next(new Error("Tài khoản không tồn tại!"));
+    }
+
+    if (Number(user.tokenVersion || 0) !== Number(decoded.ver || 0)) {
+      return next(new Error("Phiên đăng nhập đã hết hạn!"));
+    }
+
+    socket.user = user;
+
+    next();
+  } catch (error) {
+    console.error("Lỗi xác thực Socket.IO:", error.message);
+
+    next(new Error("Không thể xác thực kết nối Live Chat!"));
+  }
+});
+
+io.on("connection", (socket) => {
+  const user = socket.user;
+
+  console.log(`Socket kết nối: ${user.hoTen} - ${user.role} - ${socket.id}`);
+
+  socket.on("chat:admin:join", () => {
+    if (user.role !== "admin") return;
+
+    socket.join("mh_moto_admin");
+
+    console.log("Admin đã tham gia phòng Live Chat");
   });
 
-  // Nhận và chuyển tiếp tin nhắn
-  socket.on("chat:send", (data) => {
+  socket.on("chat:join", async (conversationId) => {
     try {
-      if (!data || typeof data !== "object") {
-        return;
-      }
-
-      const { conversationId, noiDung } = data;
-
       if (
         typeof conversationId !== "string" ||
         !conversationId.trim() ||
-        typeof noiDung !== "string" ||
-        !noiDung.trim()
+        conversationId.length > 100
       ) {
         return;
       }
 
-      const tinNhan = {
-        ...data,
-        noiDung: noiDung.trim(),
-        createdAt: new Date(),
-      };
+      if (user.role === "admin") {
+        socket.join(conversationId);
 
-      // Chuyển tin nhắn đến các thành viên trong phòng
-      io.to(conversationId).emit("chat:receive", tinNhan);
+        console.log("Admin tham gia phòng:", conversationId);
 
-      console.log("Tin nhắn Live Chat:", noiDung);
+        return;
+      }
+
+      if (user.role !== "customer") return;
+
+      const coQuyen = await Message.exists({
+        conversationId,
+        ownerId: user._id,
+      });
+
+      if (!coQuyen) {
+        console.log("Từ chối tham gia phòng chat:", conversationId);
+
+        return;
+      }
+
+      socket.join(conversationId);
+
+      console.log("Khách hàng tham gia phòng:", conversationId);
     } catch (error) {
-      console.error("Lỗi Socket.IO:", error);
+      console.error("Lỗi tham gia phòng chat:", error);
     }
   });
 
-  socket.on("disconnect", () => {
-    console.log("Ngắt kết nối Socket.IO:", socket.id);
+  socket.on("chat:send", () => {
+    console.log("Từ chối yêu cầu broadcast trực tiếp từ client.");
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log(`Socket ngắt kết nối: ${user.hoTen} - ${reason}`);
   });
 });
 
 // ======================================
-// 7. KIỂM TRA TÀI KHOẢN
+// 8. API TRANG CHỦ
 // ======================================
-
-async function kiemTraTaiKhoan(req, res, next) {
-  try {
-    const userId = req.headers["x-user-id"];
-
-    if (!userId || !mongoose.isValidObjectId(userId)) {
-      return res.status(401).json({
-        message: "Vui lòng đăng nhập!",
-      });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Tài khoản không tồn tại!",
-      });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("Lỗi kiểm tra tài khoản:", error);
-
-    return res.status(500).json({
-      message: "Lỗi kiểm tra tài khoản!",
-    });
-  }
-}
-
-// ======================================
-// 8. KIỂM TRA QUYỀN ADMIN
-// ======================================
-
-async function kiemTraAdmin(req, res, next) {
-  try {
-    const userId = req.headers["x-user-id"];
-
-    if (!userId || !mongoose.isValidObjectId(userId)) {
-      return res.status(401).json({
-        message: "Vui lòng đăng nhập!",
-      });
-    }
-
-    const admin = await User.findById(userId);
-
-    if (!admin) {
-      return res.status(401).json({
-        message: "Tài khoản không tồn tại!",
-      });
-    }
-
-    if (admin.role !== "admin") {
-      return res.status(403).json({
-        message: "Bạn không có quyền admin!",
-      });
-    }
-
-    req.admin = admin;
-    next();
-  } catch (error) {
-    console.error("Lỗi kiểm tra quyền admin:", error);
-
-    return res.status(500).json({
-      message: "Lỗi kiểm tra quyền admin!",
-    });
-  }
-}
-
-// ======================================
-// 9. API TRANG CHỦ
-// ======================================
-
 app.get("/", (req, res) => {
   res.send("MH MOTO API đang hoạt động!");
 });
 
 // ======================================
-// 10. API KIỂM TRA SERVER
+// 9. API KIỂM TRA SERVER
 // ======================================
-
 app.get("/api/health", (req, res) => {
   res.json({
     message: "Server hoạt động bình thường!",
@@ -219,9 +213,8 @@ app.get("/api/health", (req, res) => {
 });
 
 // ======================================
-// 11. ĐĂNG KÝ
+// 10. ĐĂNG KÝ
 // ======================================
-
 app.post("/api/dang-ky", async (req, res) => {
   try {
     const { hoTen, email, matKhau } = req.body;
@@ -298,9 +291,8 @@ app.post("/api/dang-ky", async (req, res) => {
 });
 
 // ======================================
-// 12. ĐĂNG NHẬP
+// 11. ĐĂNG NHẬP
 // ======================================
-
 app.post("/api/dang-nhap", async (req, res) => {
   try {
     const { email, matKhau } = req.body;
@@ -316,10 +308,14 @@ app.post("/api/dang-nhap", async (req, res) => {
       });
     }
 
-    const emailChuanHoa = email.toLowerCase().trim();
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        message: "Máy chủ chưa cấu hình JWT_SECRET!",
+      });
+    }
 
     const user = await User.findOne({
-      email: emailChuanHoa,
+      email: email.toLowerCase().trim(),
     });
 
     if (!user) {
@@ -335,6 +331,25 @@ app.post("/api/dang-nhap", async (req, res) => {
         message: "Email hoặc mật khẩu không chính xác!",
       });
     }
+
+    const token = jwt.sign(
+      {
+        sub: String(user._id),
+        ver: Number(user.tokenVersion || 0),
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.cookie("mh_moto_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
       message: "Đăng nhập thành công!",
@@ -356,9 +371,70 @@ app.post("/api/dang-nhap", async (req, res) => {
 });
 
 // ======================================
-// 13. LẤY GIỎ HÀNG
+// 12. KIỂM TRA PHIÊN ĐĂNG NHẬP
 // ======================================
+app.get("/api/auth/me", kiemTraTaiKhoan, (req, res) => {
+  return res.status(200).json({
+    success: true,
+    user: {
+      id: req.user._id,
+      _id: req.user._id,
+      hoTen: req.user.hoTen,
+      email: req.user.email,
+      role: req.user.role,
+    },
+  });
+});
 
+// ======================================
+// 13. ĐĂNG XUẤT
+// ======================================
+app.post("/api/dang-xuat", async (req, res) => {
+  try {
+    const token = req.cookies?.mh_moto_token;
+
+    if (token && process.env.JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.sub) {
+          const user = await User.findById(decoded.sub);
+
+          if (user) {
+            user.tokenVersion = Number(user.tokenVersion || 0) + 1;
+
+            await user.save();
+          }
+        }
+      } catch (error) {
+        // Token hết hạn hoặc không hợp lệ vẫn xóa cookie.
+      }
+    }
+
+    res.clearCookie("mh_moto_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Đăng xuất thành công!",
+    });
+  } catch (error) {
+    console.error("Lỗi đăng xuất:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Không thể đăng xuất!",
+    });
+  }
+});
+
+// ======================================
+// 14. LẤY GIỎ HÀNG
+// ======================================
 app.get("/api/cart", kiemTraTaiKhoan, async (req, res) => {
   try {
     let cart = await Cart.findOne({
@@ -386,32 +462,36 @@ app.get("/api/cart", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// 14. THÊM SẢN PHẨM VÀO GIỎ
+// 15. THÊM SẢN PHẨM VÀO GIỎ
 // ======================================
-
 app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
   try {
     const { productId, soLuong } = req.body;
 
-    if (!mongoose.isValidObjectId(productId)) {
+    const id = String(productId || "");
+    const quantity = Number(soLuong || 1);
+
+    if (
+      !mongoose.isValidObjectId(id) ||
+      !Number.isInteger(quantity) ||
+      quantity < 1
+    ) {
       return res.status(400).json({
-        message: "ID sản phẩm không hợp lệ!",
+        message: "Sản phẩm hoặc số lượng không hợp lệ!",
       });
     }
 
-    const soLuongThem = Number(soLuong || 1);
-
-    if (!Number.isInteger(soLuongThem) || soLuongThem < 1) {
-      return res.status(400).json({
-        message: "Số lượng sản phẩm không hợp lệ!",
-      });
-    }
-
-    const product = await Product.findById(productId);
+    const product = await Product.findById(id);
 
     if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm!",
+      });
+    }
+
+    if (Number(product.soLuong) < quantity) {
+      return res.status(400).json({
+        message: "Sản phẩm không đủ số lượng trong kho!",
       });
     }
 
@@ -426,27 +506,27 @@ app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
       });
     }
 
-    const item = cart.items.find(
+    const itemIndex = cart.items.findIndex(
       (item) => String(item.productId) === String(product._id)
     );
 
-    const soLuongHienTai = item ? item.soLuong : 0;
+    if (itemIndex >= 0) {
+      const soLuongMoi = Number(cart.items[itemIndex].soLuong || 0) + quantity;
 
-    if (soLuongHienTai + soLuongThem > product.soLuong) {
-      return res.status(400).json({
-        message: "Số lượng sản phẩm trong kho không đủ!",
-      });
-    }
+      if (soLuongMoi > Number(product.soLuong)) {
+        return res.status(400).json({
+          message: "Số lượng trong giỏ vượt quá tồn kho!",
+        });
+      }
 
-    if (item) {
-      item.soLuong += soLuongThem;
+      cart.items[itemIndex].soLuong = soLuongMoi;
     } else {
       cart.items.push({
         productId: product._id,
         tenSanPham: product.tenSanPham,
-        hinhAnh: product.hinhAnh,
-        gia: product.gia,
-        soLuong: soLuongThem,
+        hinhAnh: product.hinhAnh || "",
+        gia: Number(product.gia),
+        soLuong: quantity,
       });
     }
 
@@ -457,7 +537,7 @@ app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
       cart,
     });
   } catch (error) {
-    console.error("Lỗi thêm vào giỏ hàng:", error);
+    console.error("Lỗi thêm giỏ hàng:", error);
 
     return res.status(500).json({
       message: "Không thể thêm sản phẩm vào giỏ hàng!",
@@ -466,23 +546,34 @@ app.post("/api/cart/add", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// 15. CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG
+// 16. CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG
 // ======================================
-
 app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
   try {
-    const { productId } = req.params;
+    const productId = req.params.productId;
     const soLuong = Number(req.body.soLuong);
 
-    if (!mongoose.isValidObjectId(productId)) {
+    if (
+      !mongoose.isValidObjectId(productId) ||
+      !Number.isInteger(soLuong) ||
+      soLuong < 1
+    ) {
       return res.status(400).json({
-        message: "ID sản phẩm không hợp lệ!",
+        message: "ID hoặc số lượng không hợp lệ!",
       });
     }
 
-    if (!Number.isInteger(soLuong) || soLuong < 1) {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm!",
+      });
+    }
+
+    if (soLuong > Number(product.soLuong)) {
       return res.status(400).json({
-        message: "Số lượng phải lớn hơn 0!",
+        message: "Số lượng vượt quá tồn kho!",
       });
     }
 
@@ -492,12 +583,12 @@ app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 
     if (!cart) {
       return res.status(404).json({
-        message: "Giỏ hàng không tồn tại!",
+        message: "Không tìm thấy giỏ hàng!",
       });
     }
 
     const item = cart.items.find(
-      (item) => String(item.productId) === String(productId)
+      (sp) => String(sp.productId) === String(productId)
     );
 
     if (!item) {
@@ -506,19 +597,12 @@ app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
       });
     }
 
-    const product = await Product.findById(productId);
-
-    if (!product || soLuong > product.soLuong) {
-      return res.status(400).json({
-        message: "Số lượng sản phẩm trong kho không đủ!",
-      });
-    }
-
     item.soLuong = soLuong;
+
     await cart.save();
 
     return res.status(200).json({
-      message: "Cập nhật số lượng thành công!",
+      message: "Cập nhật giỏ hàng thành công!",
       cart,
     });
   } catch (error) {
@@ -531,12 +615,11 @@ app.put("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// 16. XÓA SẢN PHẨM KHỎI GIỎ
+// 17. XÓA SẢN PHẨM KHỎI GIỎ
 // ======================================
-
 app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
   try {
-    const { productId } = req.params;
+    const productId = req.params.productId;
 
     if (!mongoose.isValidObjectId(productId)) {
       return res.status(400).json({
@@ -550,7 +633,7 @@ app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
 
     if (!cart) {
       return res.status(404).json({
-        message: "Giỏ hàng không tồn tại!",
+        message: "Không tìm thấy giỏ hàng!",
       });
     }
 
@@ -561,23 +644,24 @@ app.delete("/api/cart/:productId", kiemTraTaiKhoan, async (req, res) => {
     await cart.save();
 
     return res.status(200).json({
-      message: "Đã xóa sản phẩm khỏi giỏ hàng!",
+      message: "Xóa sản phẩm khỏi giỏ hàng thành công!",
       cart,
     });
   } catch (error) {
-    console.error("Lỗi xóa sản phẩm:", error);
+    console.error("Lỗi xóa sản phẩm khỏi giỏ:", error);
 
     return res.status(500).json({
-      message: "Không thể xóa sản phẩm!",
+      message: "Không thể xóa sản phẩm khỏi giỏ hàng!",
     });
   }
 });
 
 // ======================================
-// 17. TẠO ĐƠN HÀNG
+// 18. TẠO ĐƠN HÀNG - TỰ ĐỘNG TRỪ KHO
 // ======================================
-
 app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
+  let session = null;
+
   try {
     const { hoTen, soDienThoai, diaChi, items, phuongThucThanhToan } = req.body;
 
@@ -602,89 +686,137 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
       });
     }
 
-    let tongTien = 0;
-    const danhSachSanPham = [];
+    // GỘP SẢN PHẨM TRÙNG ID
+    const sanPhamGop = new Map();
 
     for (const sp of items) {
       const productId = String(sp.productId || sp._id || sp.id || "");
-
-      if (!mongoose.isValidObjectId(productId)) {
-        return res.status(400).json({
-          message: "ID sản phẩm không hợp lệ!",
-        });
-      }
-
-      const product = await Product.findById(productId);
-
-      if (!product) {
-        return res.status(404).json({
-          message: "Không tìm thấy sản phẩm!",
-        });
-      }
-
-      const gia = Number(product.gia);
       const soLuong = Number(sp.soLuong || sp.quantity || 1);
 
       if (
-        !Number.isFinite(gia) ||
-        gia < 0 ||
+        !mongoose.isValidObjectId(productId) ||
         !Number.isInteger(soLuong) ||
         soLuong < 1
       ) {
         return res.status(400).json({
-          message: "Giá hoặc số lượng sản phẩm không hợp lệ!",
+          message: "ID hoặc số lượng sản phẩm không hợp lệ!",
         });
       }
 
-      if (soLuong > product.soLuong) {
-        return res.status(400).json({
-          message: `Sản phẩm ${product.tenSanPham} không đủ hàng!`,
-        });
-      }
+      const id = productId.toLowerCase();
 
-      tongTien += gia * soLuong;
-
-      danhSachSanPham.push({
-        productId: product._id,
-        tenSanPham: product.tenSanPham,
-        hinhAnh: product.hinhAnh || "",
-        gia,
-        soLuong,
-      });
+      sanPhamGop.set(id, (sanPhamGop.get(id) || 0) + soLuong);
     }
 
-    const donHang = await Order.create({
-      userId: req.user._id,
-      hoTen: hoTen.trim(),
-      soDienThoai: soDienThoai.trim(),
-      diaChi: diaChi.trim(),
-      items: danhSachSanPham,
-      tongTien,
-      phuongThucThanhToan,
-      trangThaiThanhToan:
-        phuongThucThanhToan === "COD"
-          ? "Thanh toán khi nhận hàng"
-          : "Chờ xác nhận chuyển khoản",
-      trangThaiDonHang: "Chờ xác nhận",
+    // BẮT ĐẦU GIAO DỊCH
+    session = await mongoose.startSession();
+
+    let donHangMoi = null;
+
+    await session.withTransaction(async () => {
+      let tongTien = 0;
+      const danhSachSanPham = [];
+
+      for (const [productId, soLuong] of sanPhamGop) {
+        const product = await Product.findById(productId).session(session);
+
+        if (!product) {
+          throw Object.assign(new Error("Không tìm thấy sản phẩm!"), {
+            statusCode: 404,
+          });
+        }
+
+        const gia = Number(product.gia);
+
+        if (!Number.isFinite(gia) || gia < 0) {
+          throw Object.assign(new Error("Giá sản phẩm không hợp lệ!"), {
+            statusCode: 400,
+          });
+        }
+
+        // TRỪ KHO CÓ KIỂM TRA TỒN KHO
+        const ketQuaTruKho = await Product.updateOne(
+          {
+            _id: product._id,
+            soLuong: { $gte: soLuong },
+          },
+          {
+            $inc: {
+              soLuong: -soLuong,
+            },
+          },
+          { session }
+        );
+
+        if (ketQuaTruKho.modifiedCount !== 1) {
+          throw Object.assign(
+            new Error(`Sản phẩm ${product.tenSanPham} không đủ hàng!`),
+            { statusCode: 400 }
+          );
+        }
+
+        tongTien += gia * soLuong;
+
+        danhSachSanPham.push({
+          productId: product._id,
+          tenSanPham: product.tenSanPham,
+          hinhAnh: product.hinhAnh || "",
+          gia,
+          soLuong,
+        });
+      }
+
+      // TẠO ĐƠN HÀNG
+      const ketQuaDonHang = await Order.create(
+        [
+          {
+            userId: req.user._id,
+            hoTen: hoTen.trim(),
+            soDienThoai: soDienThoai.trim(),
+            diaChi: diaChi.trim(),
+            items: danhSachSanPham,
+            tongTien,
+            phuongThucThanhToan,
+
+            trangThaiThanhToan:
+              phuongThucThanhToan === "COD"
+                ? "Thanh toán khi nhận hàng"
+                : "Chờ xác nhận chuyển khoản",
+
+            trangThaiDonHang: "Chờ xác nhận",
+
+            daTruKho: true,
+            daHoanKho: false,
+          },
+        ],
+        { session }
+      );
+
+      donHangMoi = ketQuaDonHang[0];
     });
 
     return res.status(201).json({
-      message: "Đặt hàng thành công!",
-      order: donHang,
+      success: true,
+      message: "Đặt hàng thành công! Kho đã được cập nhật.",
+      order: donHangMoi,
     });
   } catch (error) {
     console.error("LỖI TẠO ĐƠN HÀNG:", error);
 
-    return res.status(500).json({
-      message: "Không thể tạo đơn hàng!",
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Không thể tạo đơn hàng!",
     });
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 });
 
 // ======================================
-// 18. LẤY ĐƠN HÀNG CỦA KHÁCH HÀNG
+// 19. LẤY ĐƠN HÀNG CỦA KHÁCH HÀNG
 // ======================================
-
 app.get("/api/orders", kiemTraTaiKhoan, async (req, res) => {
   try {
     const orders = await Order.find({
@@ -704,9 +836,8 @@ app.get("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
-// 19. ADMIN - DANH SÁCH TÀI KHOẢN
+// 20. ADMIN - DANH SÁCH TÀI KHOẢN
 // ======================================
-
 app.get("/api/admin/users", kiemTraAdmin, async (req, res) => {
   try {
     const users = await User.find().select("-matKhau").sort({ createdAt: -1 });
@@ -724,9 +855,8 @@ app.get("/api/admin/users", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// 20. ADMIN - ĐỔI QUYỀN TÀI KHOẢN
+// 21. ADMIN - ĐỔI QUYỀN TÀI KHOẢN
 // ======================================
-
 app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
   try {
     const { role } = req.body;
@@ -744,7 +874,7 @@ app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
       });
     }
 
-    if (String(req.admin._id) === String(id) && role !== "admin") {
+    if (String(req.user._id) === String(id) && role !== "admin") {
       return res.status(403).json({
         message: "Bạn không thể tự hạ quyền admin!",
       });
@@ -759,6 +889,8 @@ app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
     }
 
     user.role = role;
+    user.tokenVersion = Number(user.tokenVersion || 0) + 1;
+
     await user.save();
 
     return res.status(200).json({
@@ -780,9 +912,8 @@ app.put("/api/admin/users/:id/role", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// 21. ADMIN - XÓA TÀI KHOẢN
+// 22. ADMIN - XÓA TÀI KHOẢN
 // ======================================
-
 app.delete("/api/admin/users/:id", kiemTraAdmin, async (req, res) => {
   try {
     const id = req.params.id;
@@ -793,7 +924,7 @@ app.delete("/api/admin/users/:id", kiemTraAdmin, async (req, res) => {
       });
     }
 
-    if (String(req.admin._id) === String(id)) {
+    if (String(req.user._id) === String(id)) {
       return res.status(403).json({
         message: "Bạn không thể tự xóa tài khoản đang đăng nhập!",
       });
@@ -820,10 +951,10 @@ app.delete("/api/admin/users/:id", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// 22. ADMIN - DANH SÁCH ĐƠN HÀNG
+// 23. QUẢN LÝ - DANH SÁCH ĐƠN HÀNG
+// ADMIN + NHÂN VIÊN
 // ======================================
-
-app.get("/api/admin/orders", kiemTraAdmin, async (req, res) => {
+app.get("/api/admin/orders", kiemTraQuanLy, async (req, res) => {
   try {
     const orders = await Order.find().sort({
       createdAt: -1,
@@ -837,18 +968,22 @@ app.get("/api/admin/orders", kiemTraAdmin, async (req, res) => {
     console.error("Lỗi lấy đơn hàng:", error);
 
     return res.status(500).json({
+      success: false,
       message: "Không thể lấy danh sách đơn hàng!",
     });
   }
 });
 
 // ======================================
-// 23. ADMIN - CẬP NHẬT TRẠNG THÁI ĐƠN
+// 24. QUẢN LÝ - CẬP NHẬT TRẠNG THÁI ĐƠN
+// ADMIN + NHÂN VIÊN
 // ======================================
+app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
+  let session = null;
 
-app.put("/api/admin/orders/:id/status", kiemTraAdmin, async (req, res) => {
   try {
     const { trangThaiDonHang } = req.body;
+    const id = req.params.id;
 
     const trangThaiHopLe = [
       "Chờ xác nhận",
@@ -860,48 +995,133 @@ app.put("/api/admin/orders/:id/status", kiemTraAdmin, async (req, res) => {
 
     if (!trangThaiHopLe.includes(trangThaiDonHang)) {
       return res.status(400).json({
+        success: false,
         message: "Trạng thái đơn hàng không hợp lệ!",
       });
     }
 
-    if (!mongoose.isValidObjectId(req.params.id)) {
+    if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({
+        success: false,
         message: "ID đơn hàng không hợp lệ!",
       });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { trangThaiDonHang },
-      { new: true, runValidators: true }
-    );
+    session = await mongoose.startSession();
 
-    if (!order) {
-      return res.status(404).json({
-        message: "Không tìm thấy đơn hàng!",
-      });
-    }
+    let orderUpdated = null;
+    let daHoanKhoTrongLanNay = false;
+
+    await session.withTransaction(async () => {
+      const order = await Order.findById(id).session(session);
+
+      if (!order) {
+        throw Object.assign(new Error("Không tìm thấy đơn hàng!"), {
+          statusCode: 404,
+        });
+      }
+
+      // ĐƠN ĐÃ HỦY KHÔNG ĐƯỢC MỞ LẠI
+      if (
+        order.trangThaiDonHang === "Đã hủy" &&
+        trangThaiDonHang !== "Đã hủy"
+      ) {
+        throw Object.assign(
+          new Error("Đơn hàng đã hủy, không thể chuyển sang trạng thái khác!"),
+          { statusCode: 400 }
+        );
+      }
+
+      // CHỈ HOÀN KHO KHI HỦY ĐƠN LẦN ĐẦU
+      if (
+        trangThaiDonHang === "Đã hủy" &&
+        order.trangThaiDonHang !== "Đã hủy" &&
+        order.daTruKho === true &&
+        order.daHoanKho !== true
+      ) {
+        for (const item of order.items || []) {
+          const productId = item.productId;
+          const soLuong = Number(item.soLuong);
+
+          if (!productId || !mongoose.isValidObjectId(String(productId))) {
+            throw Object.assign(
+              new Error(
+                `Không thể hoàn kho: sản phẩm trong đơn ${order._id} thiếu ID hợp lệ!`
+              ),
+              { statusCode: 400 }
+            );
+          }
+
+          if (!Number.isInteger(soLuong) || soLuong < 1) {
+            throw Object.assign(
+              new Error(
+                "Không thể hoàn kho: số lượng sản phẩm trong đơn không hợp lệ!"
+              ),
+              { statusCode: 400 }
+            );
+          }
+
+          const product = await Product.findById(productId).session(session);
+
+          if (!product) {
+            throw Object.assign(
+              new Error(`Không tìm thấy sản phẩm ${productId} để hoàn kho!`),
+              { statusCode: 404 }
+            );
+          }
+
+          // CỘNG LẠI TỒN KHO
+          await Product.updateOne(
+            {
+              _id: productId,
+            },
+            {
+              $inc: {
+                soLuong: soLuong,
+              },
+            },
+            { session }
+          );
+        }
+
+        order.daHoanKho = true;
+        daHoanKhoTrongLanNay = true;
+      }
+
+      order.trangThaiDonHang = trangThaiDonHang;
+
+      await order.save({ session });
+
+      orderUpdated = order;
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Cập nhật trạng thái thành công!",
-      order,
+      message: daHoanKhoTrongLanNay
+        ? "Hủy đơn hàng thành công! Tồn kho đã được hoàn lại."
+        : "Cập nhật trạng thái đơn hàng thành công!",
+      order: orderUpdated,
     });
   } catch (error) {
-    console.error("Lỗi cập nhật đơn hàng:", error);
+    console.error("LỖI CẬP NHẬT TRẠNG THÁI / HOÀN KHO:", error);
 
-    return res.status(500).json({
-      message: "Không thể cập nhật trạng thái đơn hàng!",
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Không thể cập nhật trạng thái đơn hàng!",
     });
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 });
 
 // ======================================
-// 24. ADMIN - THỐNG KÊ WEBSITE
+// 25. ADMIN - THỐNG KÊ WEBSITE
 // ======================================
-
 app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
   try {
+    // TỔNG DOANH THU ĐƠN HÀNG ĐÃ HOÀN THÀNH
     const ketQuaDoanhThu = await Order.aggregate([
       {
         $match: {
@@ -921,8 +1141,10 @@ app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
     const tongDoanhThu =
       ketQuaDoanhThu.length > 0 ? ketQuaDoanhThu[0].tongDoanhThu : 0;
 
+    // ĐẾM SẢN PHẨM
     const soLuongSanPham = await Product.countDocuments();
 
+    // ĐẾM BÀI ĐĂNG SẢN PHẨM
     const soLuongBaiDang = await Product.countDocuments();
 
     return res.status(200).json({
@@ -942,9 +1164,34 @@ app.get("/api/admin/thong-ke", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// 25. API KHÔNG TỒN TẠI
+// API NHÂN VIÊN: XEM DANH SÁCH KHÁCH HÀNG
 // ======================================
+app.get("/api/staff/customers", kiemTraQuanLy, async (req, res) => {
+  try {
+    const customers = await User.find({
+      role: "customer",
+    })
+      .select("_id hoTen email createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
 
+    return res.status(200).json({
+      success: true,
+      customers,
+    });
+  } catch (error) {
+    console.error("LỖI API KHÁCH HÀNG:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi lấy danh sách khách hàng!",
+    });
+  }
+});
+
+// ======================================
+// 26. API KHÔNG TỒN TẠI
+// ======================================
 app.use((req, res) => {
   return res.status(404).json({
     message: "Không tìm thấy API yêu cầu!",
@@ -952,9 +1199,8 @@ app.use((req, res) => {
 });
 
 // ======================================
-// 26. XỬ LÝ LỖI SERVER
+// 27. XỬ LÝ LỖI SERVER
 // ======================================
-
 app.use((err, req, res, next) => {
   console.error("Lỗi server:", err);
 
@@ -964,15 +1210,18 @@ app.use((err, req, res, next) => {
 });
 
 // ======================================
-// 27. KHỞI ĐỘNG SERVER
+// 28. KHỞI ĐỘNG SERVER
 // ======================================
-
 async function startServer() {
   try {
     const MONGO_URI = process.env.MONGO_URI;
 
     if (!MONGO_URI) {
       throw new Error("Không tìm thấy MONGO_URI trong file .env!");
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("Không tìm thấy JWT_SECRET trong file .env!");
     }
 
     await mongoose.connect(MONGO_URI);

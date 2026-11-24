@@ -95,6 +95,18 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: "Chờ xác nhận",
     },
+
+    // ĐÃ TRỪ SỐ LƯỢNG SẢN PHẨM KHỎI KHO
+    daTruKho: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ĐÃ HOÀN SỐ LƯỢNG SẢN PHẨM VÀO KHO
+    daHoanKho: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

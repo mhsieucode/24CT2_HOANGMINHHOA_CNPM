@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema(
       enum: ["customer", "staff", "admin"],
       default: "customer",
     },
+
+    // Phiên bản token để thu hồi phiên đăng nhập
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

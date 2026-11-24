@@ -3,24 +3,30 @@ import { useState } from "react";
 function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
   const [email, setEmail] = useState("");
   const [matKhau, setMatKhau] = useState("");
+  const [dangXuLy, setDangXuLy] = useState(false);
 
   const xuLyDangNhap = async (e) => {
     e.preventDefault();
 
-    if (!email || !matKhau) {
+    if (!email.trim() || !matKhau) {
       alert("Vui lòng nhập email và mật khẩu!");
       return;
     }
 
+    if (dangXuLy) return;
+
     try {
+      setDangXuLy(true);
+
       const response = await fetch("http://localhost:5000/api/dang-nhap", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email,
-          matKhau: matKhau,
+          email: email.trim(),
+          matKhau,
         }),
       });
 
@@ -31,27 +37,36 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
         return;
       }
 
-      // LƯU THÔNG TIN NGƯỜI DÙNG
+      if (!data.user) {
+        alert("Server không trả về thông tin tài khoản!");
+        return;
+      }
+
+      // Chỉ lưu thông tin hiển thị, KHÔNG lưu JWT
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      console.log("Người đăng nhập:", data.user);
+      console.log("Đăng nhập thành công:", data.user);
       console.log("Role:", data.user.role);
 
-      alert("Đăng nhập thành công!");
+      // Cập nhật trạng thái đăng nhập trong App
+      if (typeof dangNhapThanhCong === "function") {
+        dangNhapThanhCong(data.user);
+      }
 
       setEmail("");
       setMatKhau("");
 
-      // ĐÓNG POPUP
-      dong();
+      alert("Đăng nhập thành công!");
 
-      // CẬP NHẬT TRẠNG THÁI ĐĂNG NHẬP
-      if (dangNhapThanhCong) {
-        dangNhapThanhCong(data.user);
+      // Đóng popup
+      if (typeof dong === "function") {
+        dong();
       }
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
       alert("Không thể kết nối đến server!");
+    } finally {
+      setDangXuLy(false);
     }
   };
 
@@ -59,7 +74,7 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
     <div className="auth-overlay">
       <div className="auth-box">
         {/* NÚT ĐÓNG */}
-        <button className="close-auth" onClick={dong}>
+        <button className="close-auth" onClick={dong} type="button">
           ×
         </button>
 
@@ -73,7 +88,6 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
 
         {/* TIÊU ĐỀ */}
         <h2>ĐĂNG NHẬP</h2>
-
         <p className="auth-subtitle">WELCOME MHMOTO</p>
 
         {/* FORM ĐĂNG NHẬP */}
@@ -83,6 +97,8 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
             placeholder="EMAIL CỦA BẠN"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
           />
 
           <input
@@ -90,10 +106,12 @@ function DangNhap({ dong, sangDangKy, dangNhapThanhCong }) {
             placeholder="MẬT KHẨU"
             value={matKhau}
             onChange={(e) => setMatKhau(e.target.value)}
+            autoComplete="current-password"
+            required
           />
 
-          <button type="submit" className="auth-submit">
-            Đăng Nhập
+          <button type="submit" className="auth-submit" disabled={dangXuLy}>
+            {dangXuLy ? "ĐANG ĐĂNG NHẬP..." : "ĐĂNG NHẬP"}
           </button>
         </form>
 

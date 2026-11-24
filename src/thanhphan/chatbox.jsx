@@ -1,8 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { io } from "socket.io-client";
 import "../App.css";
 
 const SERVER_URL = "http://localhost:5000";
 const API = `${SERVER_URL}/api/chat`;
+
+// ======================================
+// CHATBOX MH MOTO
+// ======================================
 
 function ChatBox() {
   const [moChat, setMoChat] = useState(false);
@@ -11,32 +16,83 @@ function ChatBox() {
   const [dangGui, setDangGui] = useState(false);
   const [dangKetNoi, setDangKetNoi] = useState(false);
   const [daTaiLichSu, setDaTaiLichSu] = useState(false);
+  const [socketOnline, setSocketOnline] = useState(false);
 
   const khungChatRef = useRef(null);
   const inputRef = useRef(null);
+  const socketRef = useRef(null);
+  const coTinNhanRef = useRef(false);
 
   // ======================================
-  // TẠO MÃ CUỘC TRÒ CHUYỆN RIÊNG
+  // LẤY THÔNG TIN TÀI KHOẢN
   // ======================================
 
-  const [conversationId] = useState(() => {
-    let id = localStorage.getItem("mhMotoChatId");
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const userId = user?._id || user?.id || "";
+  const tenKhach = user?.hoTen || "Khách hàng";
+
+  // ======================================
+  // MỖI TÀI KHOẢN CÓ MỘT CUỘC TRÒ CHUYỆN RIÊNG
+  // ======================================
+
+  const conversationId = useMemo(() => {
+    if (!userId) return "";
+
+    const key = `mhMotoChatId_${userId}`;
+
+    let id = localStorage.getItem(key);
 
     if (!id) {
       id = "chat_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
 
-      localStorage.setItem("mhMotoChatId", id);
+      localStorage.setItem(key, id);
     }
 
     return id;
+  }, [userId]);
+
+  // ======================================
+  // CHUYỂN TIN NHẮN VỀ ĐỊNH DẠNG HIỂN THỊ
+  // ======================================
+
+  const chuanHoaTinNhan = (msg) => ({
+    _id:
+      msg._id ||
+      `${msg.sender}_${msg.createdAt || Date.now()}_${Math.random()}`,
+    sender: msg.sender === "customer" ? "user" : msg.sender,
+    content: msg.content || msg.noiDung || "",
+    createdAt: msg.createdAt || new Date().toISOString(),
   });
 
   // ======================================
-  // LẤY TÊN KHÁCH HÀNG
+  // THÊM TIN NHẮN VÀO DANH SÁCH, TRÁNH TRÙNG
   // ======================================
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  const tenKhach = user?.hoTen || "Khách hàng";
+  const themTinNhan = (msg) => {
+    if (!msg) return;
+
+    const tinNhan = chuanHoaTinNhan(msg);
+
+    setTinNhans((prev) => {
+      const daTonTai = prev.some(
+        (item) => String(item._id) === String(tinNhan._id)
+      );
+
+      if (daTonTai) return prev;
+
+      return [...prev, tinNhan].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    });
+  };
 
   // ======================================
   // KIỂM TRA KẾT NỐI BACKEND
@@ -76,20 +132,6 @@ function ChatBox() {
   }, []);
 
   // ======================================
-  // CHUYỂN DỮ LIỆU TIN NHẮN VỀ ĐỊNH DẠNG HIỂN THỊ
-  // ======================================
-
-  const chuanHoaTinNhan = (msg) => ({
-    _id:
-      msg._id ||
-      `${msg.sender}_${msg.createdAt || Date.now()}_${Math.random()}`,
-    sender:
-      msg.sender === "user" || msg.sender === "customer" ? "user" : msg.sender,
-    content: msg.content || msg.noiDung || "",
-    createdAt: msg.createdAt || new Date().toISOString(),
-  });
-
-  // ======================================
   // TẢI LỊCH SỬ TRÒ CHUYỆN
   // ======================================
 
@@ -97,19 +139,40 @@ function ChatBox() {
     let huy = false;
 
     const taiLichSu = async () => {
+      setDaTaiLichSu(false);
+      setTinNhans([]);
+      coTinNhanRef.current = false;
+
+      if (!userId || !conversationId) {
+        setDaTaiLichSu(true);
+        return;
+      }
+
       try {
         const response = await fetch(
-          `${API}/history/${encodeURIComponent(conversationId)}`
+          `${API}/history/${encodeURIComponent(conversationId)}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
         );
-
-        if (!response.ok) {
-          throw new Error("Không tải được lịch sử trò chuyện");
-        }
 
         const data = await response.json();
 
+        if (!response.ok) {
+          throw new Error(data.message || "Không tải được lịch sử trò chuyện");
+        }
+
         if (!huy && Array.isArray(data)) {
-          setTinNhans(data.map(chuanHoaTinNhan));
+          const danhSach = data.map(chuanHoaTinNhan);
+
+          setTinNhans(danhSach);
+          coTinNhanRef.current = danhSach.length > 0;
+
+          // Nếu Socket đã kết nối thì tham gia phòng chat
+          if (danhSach.length > 0 && socketRef.current?.connected) {
+            socketRef.current.emit("chat:join", conversationId);
+          }
         }
       } catch (error) {
         console.error("Lỗi tải lịch sử chat:", error);
@@ -125,7 +188,90 @@ function ChatBox() {
     return () => {
       huy = true;
     };
-  }, [conversationId]);
+  }, [userId, conversationId]);
+
+  // ======================================
+  // KẾT NỐI SOCKET.IO
+  // ======================================
+
+  useEffect(() => {
+    if (!userId || !conversationId) {
+      setSocketOnline(false);
+      return;
+    }
+
+    const socket = io(SERVER_URL, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socketRef.current = socket;
+
+    // SOCKET KẾT NỐI THÀNH CÔNG
+    socket.on("connect", () => {
+      console.log("MH MOTO CHAT SOCKET ĐÃ KẾT NỐI:", socket.id);
+
+      setSocketOnline(true);
+
+      // Chỉ tham gia phòng khi đã có tin nhắn thuộc tài khoản
+      if (coTinNhanRef.current) {
+        socket.emit("chat:join", conversationId);
+      }
+    });
+
+    // SOCKET MẤT KẾT NỐI
+    socket.on("disconnect", (reason) => {
+      console.log("MH MOTO CHAT SOCKET NGẮT KẾT NỐI:", reason);
+
+      setSocketOnline(false);
+    });
+
+    // SOCKET BÁO LỖI
+    socket.on("connect_error", (error) => {
+      console.error("LỖI SOCKET CHAT:", error.message);
+
+      setSocketOnline(false);
+    });
+
+    // NHẬN TIN NHẮN TỪ ADMIN HOẶC CHATBOT
+    socket.on("chat:receive", (msg) => {
+      if (!msg) return;
+
+      const maCuocTroChuyen = String(msg?.conversationId || "");
+      const maDangMo = String(conversationId || "");
+
+      if (!maCuocTroChuyen || maCuocTroChuyen !== maDangMo) {
+        console.log("Tin nhắn không thuộc cuộc trò chuyện đang mở:", {
+          maCuocTroChuyen,
+          maDangMo,
+        });
+        return;
+      }
+
+      themTinNhan(msg);
+
+      themTinNhan(msg);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("chat:receive");
+
+      socket.disconnect();
+
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+
+      setSocketOnline(false);
+    };
+  }, [userId, conversationId]);
 
   // ======================================
   // TỰ ĐỘNG CUỘN XUỐNG CUỐI
@@ -138,13 +284,18 @@ function ChatBox() {
   }, [tinNhans, moChat]);
 
   // ======================================
-  // GỬI TIN NHẮN VÀ NHẬN BOT TRẢ LỜI
+  // GỬI TIN NHẮN
   // ======================================
 
   const guiTinNhan = async () => {
     const text = noiDung.trim();
 
     if (!text || dangGui) return;
+
+    if (!userId || !conversationId) {
+      alert("Bạn vui lòng đăng nhập để sử dụng chức năng chat MH MOTO!");
+      return;
+    }
 
     if (!dangKetNoi) {
       alert("Máy chủ MH MOTO chưa kết nối. Bạn vui lòng thử lại!");
@@ -157,6 +308,7 @@ function ChatBox() {
     try {
       const response = await fetch(`${API}/send`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -172,27 +324,23 @@ function ChatBox() {
         throw new Error(data.message || "Không gửi được tin nhắn!");
       }
 
-      // Thêm tin nhắn khách hàng
-      const tinKhach = chuanHoaTinNhan(data.userMessage);
+      // THÊM TIN NHẮN KHÁCH HÀNG
+      if (data.userMessage) {
+        themTinNhan(data.userMessage);
+      }
 
-      // Thêm câu trả lời của chatbot
-      const tinBot = chuanHoaTinNhan(data.botMessage);
+      // THÊM TIN NHẮN CHATBOT
+      if (data.botMessage) {
+        themTinNhan(data.botMessage);
+      }
 
-      setTinNhans((prev) => {
-        const ids = new Set(prev.map((item) => item._id));
+      // ĐÁNH DẤU CUỘC TRÒ CHUYỆN ĐÃ CÓ TIN NHẮN
+      coTinNhanRef.current = true;
 
-        const ketQua = [...prev];
-
-        if (!ids.has(tinKhach._id)) {
-          ketQua.push(tinKhach);
-        }
-
-        if (!ids.has(tinBot._id)) {
-          ketQua.push(tinBot);
-        }
-
-        return ketQua;
-      });
+      // THAM GIA PHÒNG SOCKET ĐỂ NHẬN TIN NHẮN ADMIN
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("chat:join", conversationId);
+      }
     } catch (error) {
       console.error("LỖI GỬI CHAT:", error);
 
@@ -265,10 +413,16 @@ function ChatBox() {
 
               <small>
                 <span
-                  className={dangKetNoi ? "mh-online" : "mh-offline"}
+                  className={
+                    dangKetNoi && socketOnline ? "mh-online" : "mh-offline"
+                  }
                 ></span>
 
-                {dangKetNoi ? "Trợ lý đang trực tuyến" : "Đang kết nối..."}
+                {!dangKetNoi
+                  ? "Đang kết nối máy chủ..."
+                  : socketOnline
+                  ? "Đang trực tuyến"
+                  : "Đang kết nối Live Chat..."}
               </small>
             </div>
 
@@ -297,13 +451,21 @@ function ChatBox() {
               <small>Trợ lý tư vấn tự động MH MOTO</small>
             </div>
 
-            {!daTaiLichSu && (
+            {!userId && (
+              <div className="mh-chat-loading">
+                Vui lòng đăng nhập để bắt đầu trò chuyện.
+              </div>
+            )}
+
+            {!daTaiLichSu && userId && (
               <div className="mh-chat-loading">Đang tải cuộc trò chuyện...</div>
             )}
 
             {tinNhans.map((msg) => {
               const laKhach =
                 msg.sender === "user" || msg.sender === "customer";
+
+              const laAdmin = msg.sender === "admin";
 
               return (
                 <div
@@ -314,11 +476,19 @@ function ChatBox() {
                       : "mh-message mh-message-bot"
                   }
                 >
-                  {!laKhach && <div className="mh-message-avatar">🏍️</div>}
+                  {!laKhach && (
+                    <div className="mh-message-avatar">
+                      {laAdmin ? "👨‍💼" : "🏍️"}
+                    </div>
+                  )}
 
                   <div className="mh-message-content">
                     <div className="mh-message-name">
-                      {laKhach ? "Bạn" : "MH MOTO BOT"}
+                      {laKhach
+                        ? "Bạn"
+                        : laAdmin
+                        ? "NHÂN VIÊN MH MOTO"
+                        : "MH MOTO BOT"}
                     </div>
 
                     <div className="mh-message-text">{msg.content}</div>
@@ -374,7 +544,7 @@ function ChatBox() {
               placeholder="Nhập tin nhắn của bạn..."
               value={noiDung}
               maxLength={2000}
-              disabled={dangGui}
+              disabled={dangGui || !userId}
               onChange={(e) => setNoiDung(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -387,7 +557,7 @@ function ChatBox() {
             <button
               className="mh-chat-send"
               onClick={guiTinNhan}
-              disabled={!noiDung.trim() || dangGui || !dangKetNoi}
+              disabled={!noiDung.trim() || dangGui || !dangKetNoi || !userId}
               aria-label="Gửi tin nhắn"
             >
               ➤

@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 
 const Product = require("../models/product");
-const User = require("../models/user");
+const { kiemTraQuanLy } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -20,7 +20,6 @@ if (!fs.existsSync(uploadDir)) {
 
 // ======================================
 // 2. DANH MỤC VÀ THÔNG SỐ KỸ THUẬT
-// Phải khớp với QuanLySanPham.jsx
 // ======================================
 
 const DANH_MUC = ["Mũ", "Xe Moto", "Bánh xe", "Phụ tùng xe"];
@@ -89,52 +88,7 @@ const chuyenSanPhamThanhObject = (sanPham) => {
 };
 
 // ======================================
-// 6. KIỂM TRA QUYỀN ADMIN
-// ======================================
-
-const kiemTraAdmin = async (req, res, next) => {
-  try {
-    const userId = req.headers["x-user-id"];
-
-    if (!userId) {
-      return res.status(401).json({
-        message: "Bạn cần đăng nhập để thực hiện chức năng này!",
-      });
-    }
-
-    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
-      return res.status(401).json({
-        message: "ID tài khoản không hợp lệ!",
-      });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Tài khoản không tồn tại!",
-      });
-    }
-
-    if (user.role !== "admin") {
-      return res.status(403).json({
-        message: "Bạn không có quyền quản lý sản phẩm!",
-      });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("LỖI KIỂM TRA ADMIN:", error);
-
-    return res.status(401).json({
-      message: "Không thể xác thực tài khoản!",
-    });
-  }
-};
-
-// ======================================
-// 7. XỬ LÝ THÔNG SỐ KỸ THUẬT
+// 6. XỬ LÝ THÔNG SỐ KỸ THUẬT
 // ======================================
 
 const xuLyThongSo = (duLieu, danhMuc) => {
@@ -148,7 +102,6 @@ const xuLyThongSo = (duLieu, danhMuc) => {
 
   let thongSo = duLieu;
 
-  // Nhận dữ liệu JSON string từ FormData
   if (typeof thongSo === "string") {
     try {
       thongSo = JSON.parse(thongSo);
@@ -157,7 +110,6 @@ const xuLyThongSo = (duLieu, danhMuc) => {
     }
   }
 
-  // Nhận dữ liệu dạng Map
   if (thongSo instanceof Map) {
     thongSo = Object.fromEntries(thongSo);
   }
@@ -193,8 +145,7 @@ const xuLyThongSo = (duLieu, danhMuc) => {
 };
 
 // ======================================
-// 8. LẤY THÔNG SỐ TỪ FRONTEND
-// Hỗ trợ cả thongSo và thongSoKyThuat
+// 7. LẤY THÔNG SỐ TỪ FRONTEND
 // ======================================
 
 const layThongSoTuRequest = (body) => {
@@ -210,7 +161,7 @@ const layThongSoTuRequest = (body) => {
 };
 
 // ======================================
-// 9. CẤU HÌNH UPLOAD ẢNH
+// 8. CẤU HÌNH UPLOAD ẢNH
 // ======================================
 
 const storage = multer.diskStorage({
@@ -243,7 +194,7 @@ const upload = multer({
 });
 
 // ======================================
-// 10. LẤY DANH SÁCH SẢN PHẨM
+// 9. LẤY DANH SÁCH SẢN PHẨM
 // ======================================
 
 router.get("/", async (req, res) => {
@@ -263,7 +214,7 @@ router.get("/", async (req, res) => {
 });
 
 // ======================================
-// 11. LẤY CHI TIẾT SẢN PHẨM
+// 10. LẤY CHI TIẾT SẢN PHẨM
 // ======================================
 
 router.get("/:id", async (req, res) => {
@@ -293,14 +244,14 @@ router.get("/:id", async (req, res) => {
 });
 
 // ======================================
-// 12. THÊM SẢN PHẨM
+// 11. THÊM SẢN PHẨM
+// ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
-router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
+router.post("/", kiemTraQuanLy, upload.single("hinhAnh"), async (req, res) => {
   try {
     const { tenSanPham, gia, moTa, soLuong, danhMuc } = req.body;
 
-    // Kiểm tra tên sản phẩm
     if (!tenSanPham || !String(tenSanPham).trim()) {
       xoaAnhUpload(req.file);
 
@@ -309,7 +260,6 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
       });
     }
 
-    // Kiểm tra giá
     if (
       gia === undefined ||
       gia === "" ||
@@ -323,7 +273,6 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
       });
     }
 
-    // Kiểm tra số lượng
     if (
       soLuong !== undefined &&
       (soLuong === "" ||
@@ -337,7 +286,6 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
       });
     }
 
-    // Kiểm tra danh mục
     const danhMucMoi = chuanHoaDanhMuc(danhMuc || "Xe Moto");
 
     if (!DANH_MUC.includes(danhMucMoi)) {
@@ -348,12 +296,9 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
       });
     }
 
-    // Nhận thông số từ một trong hai tên trường
     const duLieuThongSo = layThongSoTuRequest(req.body);
-
     const thongSoMoi = xuLyThongSo(duLieuThongSo, danhMucMoi);
 
-    // Tạo sản phẩm
     const sanPham = new Product({
       tenSanPham: String(tenSanPham).trim(),
       gia: Number(gia),
@@ -361,8 +306,6 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
       soLuong: Number(soLuong || 0),
       danhMuc: danhMucMoi,
       hinhAnh: req.file ? `/uploads/${req.file.filename}` : "",
-
-      // Lưu đồng bộ hai trường
       thongSo: thongSoMoi,
       thongSoKyThuat: thongSoMoi,
     });
@@ -371,6 +314,7 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
 
     console.log("================================");
     console.log("ĐÃ THÊM SẢN PHẨM:", sanPham.tenSanPham);
+    console.log("NGƯỜI THỰC HIỆN:", req.user?.role);
     console.log("DANH MỤC:", sanPham.danhMuc);
     console.log("THÔNG SỐ:", thongSoMoi);
     console.log("================================");
@@ -391,174 +335,166 @@ router.post("/", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
 });
 
 // ======================================
-// 13. CẬP NHẬT SẢN PHẨM
+// 12. CẬP NHẬT SẢN PHẨM
+// ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
-router.put("/:id", kiemTraAdmin, upload.single("hinhAnh"), async (req, res) => {
-  try {
-    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
-      xoaAnhUpload(req.file);
+router.put(
+  "/:id",
+  kiemTraQuanLy,
+  upload.single("hinhAnh"),
+  async (req, res) => {
+    try {
+      if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+        xoaAnhUpload(req.file);
 
-      return res.status(400).json({
-        message: "ID sản phẩm không hợp lệ!",
-      });
-    }
-
-    const sanPhamCu = await Product.findById(req.params.id);
-
-    if (!sanPhamCu) {
-      xoaAnhUpload(req.file);
-
-      return res.status(404).json({
-        message: "Không tìm thấy sản phẩm!",
-      });
-    }
-
-    const { tenSanPham, gia, moTa, soLuong, danhMuc } = req.body;
-
-    const danhMucCu = chuanHoaDanhMuc(sanPhamCu.danhMuc);
-    const danhMucMoi = chuanHoaDanhMuc(danhMuc || danhMucCu || "Xe Moto");
-
-    // Kiểm tra tên
-    if (tenSanPham !== undefined && !String(tenSanPham).trim()) {
-      xoaAnhUpload(req.file);
-
-      return res.status(400).json({
-        message: "Tên sản phẩm không được để trống!",
-      });
-    }
-
-    // Kiểm tra giá
-    if (
-      gia === undefined ||
-      gia === "" ||
-      !Number.isFinite(Number(gia)) ||
-      Number(gia) < 0
-    ) {
-      xoaAnhUpload(req.file);
-
-      return res.status(400).json({
-        message: "Giá sản phẩm không hợp lệ!",
-      });
-    }
-
-    // Kiểm tra số lượng
-    if (
-      soLuong !== undefined &&
-      (soLuong === "" ||
-        !Number.isFinite(Number(soLuong)) ||
-        Number(soLuong) < 0)
-    ) {
-      xoaAnhUpload(req.file);
-
-      return res.status(400).json({
-        message: "Số lượng sản phẩm không hợp lệ!",
-      });
-    }
-
-    // Kiểm tra danh mục
-    if (!DANH_MUC.includes(danhMucMoi)) {
-      xoaAnhUpload(req.file);
-
-      return res.status(400).json({
-        message: "Danh mục sản phẩm không hợp lệ!",
-      });
-    }
-
-    // Cập nhật thông tin cơ bản
-    if (tenSanPham !== undefined) {
-      sanPhamCu.tenSanPham = String(tenSanPham).trim();
-    }
-
-    sanPhamCu.gia = Number(gia);
-
-    if (moTa !== undefined) {
-      sanPhamCu.moTa = moTa;
-    }
-
-    if (soLuong !== undefined) {
-      sanPhamCu.soLuong = Number(soLuong);
-    }
-
-    sanPhamCu.danhMuc = danhMucMoi;
-
-    // ======================================
-    // CẬP NHẬT THÔNG SỐ KỸ THUẬT
-    // ======================================
-
-    const duLieuThongSo = layThongSoTuRequest(req.body);
-
-    if (duLieuThongSo !== undefined) {
-      const thongSoMoi = xuLyThongSo(duLieuThongSo, danhMucMoi);
-
-      sanPhamCu.set("thongSo", thongSoMoi);
-      sanPhamCu.set("thongSoKyThuat", thongSoMoi);
-
-      sanPhamCu.markModified("thongSo");
-      sanPhamCu.markModified("thongSoKyThuat");
-    } else if (danhMucMoi !== danhMucCu) {
-      // Đổi danh mục mà không gửi thông số mới
-      sanPhamCu.set("thongSo", {});
-      sanPhamCu.set("thongSoKyThuat", {});
-
-      sanPhamCu.markModified("thongSo");
-      sanPhamCu.markModified("thongSoKyThuat");
-    }
-
-    // ======================================
-    // CẬP NHẬT ẢNH
-    // ======================================
-
-    const anhCu = sanPhamCu.hinhAnh;
-
-    if (req.file) {
-      sanPhamCu.hinhAnh = `/uploads/${req.file.filename}`;
-    }
-
-    // Lưu MongoDB
-    await sanPhamCu.save();
-
-    console.log("================================");
-    console.log("SẢN PHẨM ĐÃ CẬP NHẬT:", sanPhamCu.tenSanPham);
-    console.log("DANH MỤC:", sanPhamCu.danhMuc);
-    console.log("THÔNG SỐ NHẬN ĐƯỢC:", duLieuThongSo);
-    console.log("THÔNG SỐ ĐÃ LƯU:", sanPhamCu.get("thongSoKyThuat"));
-    console.log("================================");
-
-    // Xóa ảnh cũ sau khi lưu thành công
-    if (req.file && anhCu && anhCu.startsWith("/uploads/")) {
-      const tenAnhCu = path.basename(anhCu);
-      const duongDanAnhCu = path.join(uploadDir, tenAnhCu);
-
-      try {
-        if (fs.existsSync(duongDanAnhCu)) {
-          fs.unlinkSync(duongDanAnhCu);
-        }
-      } catch (error) {
-        console.error("Không xóa được ảnh cũ:", error.message);
+        return res.status(400).json({
+          message: "ID sản phẩm không hợp lệ!",
+        });
       }
+
+      const sanPhamCu = await Product.findById(req.params.id);
+
+      if (!sanPhamCu) {
+        xoaAnhUpload(req.file);
+
+        return res.status(404).json({
+          message: "Không tìm thấy sản phẩm!",
+        });
+      }
+
+      const { tenSanPham, gia, moTa, soLuong, danhMuc } = req.body;
+
+      const danhMucCu = chuanHoaDanhMuc(sanPhamCu.danhMuc);
+      const danhMucMoi = chuanHoaDanhMuc(danhMuc || danhMucCu || "Xe Moto");
+
+      if (tenSanPham !== undefined && !String(tenSanPham).trim()) {
+        xoaAnhUpload(req.file);
+
+        return res.status(400).json({
+          message: "Tên sản phẩm không được để trống!",
+        });
+      }
+
+      if (
+        gia === undefined ||
+        gia === "" ||
+        !Number.isFinite(Number(gia)) ||
+        Number(gia) < 0
+      ) {
+        xoaAnhUpload(req.file);
+
+        return res.status(400).json({
+          message: "Giá sản phẩm không hợp lệ!",
+        });
+      }
+
+      if (
+        soLuong !== undefined &&
+        (soLuong === "" ||
+          !Number.isFinite(Number(soLuong)) ||
+          Number(soLuong) < 0)
+      ) {
+        xoaAnhUpload(req.file);
+
+        return res.status(400).json({
+          message: "Số lượng sản phẩm không hợp lệ!",
+        });
+      }
+
+      if (!DANH_MUC.includes(danhMucMoi)) {
+        xoaAnhUpload(req.file);
+
+        return res.status(400).json({
+          message: "Danh mục sản phẩm không hợp lệ!",
+        });
+      }
+
+      if (tenSanPham !== undefined) {
+        sanPhamCu.tenSanPham = String(tenSanPham).trim();
+      }
+
+      sanPhamCu.gia = Number(gia);
+
+      if (moTa !== undefined) {
+        sanPhamCu.moTa = moTa;
+      }
+
+      if (soLuong !== undefined) {
+        sanPhamCu.soLuong = Number(soLuong);
+      }
+
+      sanPhamCu.danhMuc = danhMucMoi;
+
+      const duLieuThongSo = layThongSoTuRequest(req.body);
+
+      if (duLieuThongSo !== undefined) {
+        const thongSoMoi = xuLyThongSo(duLieuThongSo, danhMucMoi);
+
+        sanPhamCu.set("thongSo", thongSoMoi);
+        sanPhamCu.set("thongSoKyThuat", thongSoMoi);
+
+        sanPhamCu.markModified("thongSo");
+        sanPhamCu.markModified("thongSoKyThuat");
+      } else if (danhMucMoi !== danhMucCu) {
+        sanPhamCu.set("thongSo", {});
+        sanPhamCu.set("thongSoKyThuat", {});
+
+        sanPhamCu.markModified("thongSo");
+        sanPhamCu.markModified("thongSoKyThuat");
+      }
+
+      const anhCu = sanPhamCu.hinhAnh;
+
+      if (req.file) {
+        sanPhamCu.hinhAnh = `/uploads/${req.file.filename}`;
+      }
+
+      await sanPhamCu.save();
+
+      console.log("================================");
+      console.log("SẢN PHẨM ĐÃ CẬP NHẬT:", sanPhamCu.tenSanPham);
+      console.log("NGƯỜI THỰC HIỆN:", req.user?.role);
+      console.log("DANH MỤC:", sanPhamCu.danhMuc);
+      console.log("THÔNG SỐ NHẬN ĐƯỢC:", duLieuThongSo);
+      console.log("THÔNG SỐ ĐÃ LƯU:", sanPhamCu.get("thongSoKyThuat"));
+      console.log("================================");
+
+      if (req.file && anhCu && anhCu.startsWith("/uploads/")) {
+        const tenAnhCu = path.basename(anhCu);
+        const duongDanAnhCu = path.join(uploadDir, tenAnhCu);
+
+        try {
+          if (fs.existsSync(duongDanAnhCu)) {
+            fs.unlinkSync(duongDanAnhCu);
+          }
+        } catch (error) {
+          console.error("Không xóa được ảnh cũ:", error.message);
+        }
+      }
+
+      return res.status(200).json({
+        message: "Cập nhật sản phẩm thành công!",
+        product: chuyenSanPhamThanhObject(sanPhamCu),
+      });
+    } catch (error) {
+      console.error("LỖI CẬP NHẬT SẢN PHẨM:", error);
+
+      xoaAnhUpload(req.file);
+
+      return res.status(400).json({
+        message: error.message || "Lỗi cập nhật sản phẩm!",
+      });
     }
-
-    return res.status(200).json({
-      message: "Cập nhật sản phẩm thành công!",
-      product: chuyenSanPhamThanhObject(sanPhamCu),
-    });
-  } catch (error) {
-    console.error("LỖI CẬP NHẬT SẢN PHẨM:", error);
-
-    xoaAnhUpload(req.file);
-
-    return res.status(400).json({
-      message: error.message || "Lỗi cập nhật sản phẩm!",
-    });
   }
-});
+);
 
 // ======================================
-// 14. XÓA SẢN PHẨM
+// 13. XÓA SẢN PHẨM
+// ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
-router.delete("/:id", kiemTraAdmin, async (req, res) => {
+router.delete("/:id", kiemTraQuanLy, async (req, res) => {
   try {
     if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
       return res.status(400).json({
@@ -587,6 +523,9 @@ router.delete("/:id", kiemTraAdmin, async (req, res) => {
       }
     }
 
+    console.log("ĐÃ XÓA SẢN PHẨM:", sanPham.tenSanPham);
+    console.log("NGƯỜI THỰC HIỆN:", req.user?.role);
+
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
     });
@@ -600,7 +539,7 @@ router.delete("/:id", kiemTraAdmin, async (req, res) => {
 });
 
 // ======================================
-// 15. XỬ LÝ LỖI UPLOAD
+// 14. XỬ LÝ LỖI UPLOAD
 // ======================================
 
 router.use((error, req, res, next) => {
@@ -614,7 +553,7 @@ router.use((error, req, res, next) => {
 });
 
 // ======================================
-// 16. XUẤT ROUTER
+// 15. XUẤT ROUTER
 // ======================================
 
 module.exports = router;

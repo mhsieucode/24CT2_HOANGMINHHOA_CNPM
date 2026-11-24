@@ -1,139 +1,102 @@
 import { useState } from "react";
-import "../App.css";
-
-// ======================================
-// 1. ĐỊA CHỈ SERVER
-// ======================================
 
 const SERVER_URL = "http://localhost:5000";
 
 // ======================================
-// 2. XỬ LÝ ĐƯỜNG DẪN HÌNH ẢNH
+// 1. HÀM XỬ LÝ ẢNH
 // ======================================
+const layDuongDanAnh = (anh) => {
+  if (!anh) return "/image/fullface1.jpg";
 
-const layDuongDanAnh = (url) => {
-  if (!url) return "/image/fullface1.jpg";
-
-  const duongDan = String(url).trim().replace(/\\/g, "/");
-
-  // Ảnh đã có địa chỉ đầy đủ
   if (
-    duongDan.startsWith("http://") ||
-    duongDan.startsWith("https://") ||
-    duongDan.startsWith("data:") ||
-    duongDan.startsWith("blob:")
+    anh.startsWith("http://") ||
+    anh.startsWith("https://") ||
+    anh.startsWith("data:") ||
+    anh.startsWith("blob:")
   ) {
-    return duongDan;
+    return anh;
   }
 
-  // Ảnh nằm trong thư mục uploads của backend
-  if (/^\/?uploads\//i.test(duongDan)) {
-    return `${SERVER_URL}/${duongDan.replace(/^\/+/, "")}`;
+  if (anh.startsWith("/uploads/")) {
+    return `${SERVER_URL}${anh}`;
   }
 
-  // Ảnh nằm trong thư mục public/image hoặc public/images
-  if (duongDan.startsWith("/image/") || duongDan.startsWith("/images/")) {
-    return duongDan;
-  }
-
-  // Các đường dẫn bắt đầu bằng dấu /
-  if (duongDan.startsWith("/")) {
-    return duongDan;
-  }
-
-  return `/${duongDan}`;
+  return anh;
 };
 
 // ======================================
-// 3. COMPONENT GIỎ HÀNG
+// 2. HÀM LẤY SỐ LƯỢNG
 // ======================================
+const laySoLuong = (sp) => {
+  return Math.max(1, Number(sp.soLuong ?? sp.quantity ?? 1));
+};
 
+// ======================================
+// 3. HÀM LẤY GIÁ
+// ======================================
+const layGia = (sp) => {
+  return Number(sp.gia ?? sp.price ?? 0);
+};
+
+// ======================================
+// 4. ĐỊNH DẠNG TIỀN
+// ======================================
+const dinhDangTien = (soTien) => {
+  return Number(soTien || 0).toLocaleString("vi-VN") + " ₫";
+};
+
+// ======================================
+// 5. COMPONENT GIỎ HÀNG
+// ======================================
 function GioHang({ dong }) {
-  // LẤY GIỎ HÀNG TỪ LOCAL STORAGE
   const [sanPham, setSanPham] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("gioHang")) || [];
+      const data = JSON.parse(localStorage.getItem("gioHang") || "[]");
+      return Array.isArray(data) ? data : [];
     } catch {
       return [];
     }
   });
 
-  // ======================================
-  // 4. FORM THANH TOÁN
-  // ======================================
-
   const [hienThanhToan, setHienThanhToan] = useState(false);
-
-  // THÔNG TIN KHÁCH HÀNG
   const [hoTen, setHoTen] = useState("");
   const [soDienThoai, setSoDienThoai] = useState("");
   const [diaChi, setDiaChi] = useState("");
-
-  // PHƯƠNG THỨC THANH TOÁN
   const [phuongThuc, setPhuongThuc] = useState("COD");
+  const [dangDatHang, setDangDatHang] = useState(false);
 
   // ======================================
-  // 5. LẤY SỐ LƯỢNG SẢN PHẨM
+  // 6. CẬP NHẬT GIỎ HÀNG
   // ======================================
-
-  const laySoLuong = (sp) => {
-    return Number(sp.quantity ?? sp.soLuong ?? 1) || 1;
-  };
-
-  // ======================================
-  // 6. LƯU VÀ CẬP NHẬT GIỎ HÀNG
-  // ======================================
-
   const capNhatGioHang = (danhSachMoi) => {
     setSanPham(danhSachMoi);
-
     localStorage.setItem("gioHang", JSON.stringify(danhSachMoi));
   };
 
   // ======================================
-  // 7. TĂNG SỐ LƯỢNG
+  // 7. TĂNG / GIẢM SỐ LƯỢNG
   // ======================================
-
-  const tangSoLuong = (index) => {
+  const thayDoiSoLuong = (index, thayDoi) => {
     const danhSachMoi = [...sanPham];
 
-    const soLuongMoi = laySoLuong(danhSachMoi[index]) + 1;
+    const soLuongMoi = laySoLuong(danhSachMoi[index]) + thayDoi;
 
-    danhSachMoi[index] = {
-      ...danhSachMoi[index],
-      quantity: soLuongMoi,
-      soLuong: soLuongMoi,
-    };
+    if (soLuongMoi <= 0) {
+      danhSachMoi.splice(index, 1);
+    } else {
+      danhSachMoi[index] = {
+        ...danhSachMoi[index],
+        soLuong: soLuongMoi,
+        quantity: soLuongMoi,
+      };
+    }
 
     capNhatGioHang(danhSachMoi);
   };
 
   // ======================================
-  // 8. GIẢM SỐ LƯỢNG
+  // 8. XÓA SẢN PHẨM
   // ======================================
-
-  const giamSoLuong = (index) => {
-    const danhSachMoi = [...sanPham];
-
-    const soLuongHienTai = laySoLuong(danhSachMoi[index]);
-
-    if (soLuongHienTai > 1) {
-      const soLuongMoi = soLuongHienTai - 1;
-
-      danhSachMoi[index] = {
-        ...danhSachMoi[index],
-        quantity: soLuongMoi,
-        soLuong: soLuongMoi,
-      };
-
-      capNhatGioHang(danhSachMoi);
-    }
-  };
-
-  // ======================================
-  // 9. XÓA SẢN PHẨM
-  // ======================================
-
   const xoaSanPham = (index) => {
     const danhSachMoi = sanPham.filter((_, i) => i !== index);
 
@@ -141,343 +104,546 @@ function GioHang({ dong }) {
   };
 
   // ======================================
-  // 10. TÍNH TỔNG TIỀN
+  // 9. TÍNH TỔNG TIỀN
   // ======================================
-
   const tongTien = sanPham.reduce((tong, sp) => {
-    const gia = Number(sp.price ?? sp.gia ?? 0);
-    const soLuong = laySoLuong(sp);
-
-    return tong + gia * soLuong;
+    return tong + layGia(sp) * laySoLuong(sp);
   }, 0);
 
-  // ĐỊNH DẠNG TIỀN
-  const dinhDangTien = (tien) => {
-    return Number(tien).toLocaleString("vi-VN") + " đ";
+  const tongSoLuong = sanPham.reduce((tong, sp) => {
+    return tong + laySoLuong(sp);
+  }, 0);
+
+  // ======================================
+  // 10. LẤY TÊN SẢN PHẨM
+  // ======================================
+  const layTenSanPham = (sp) => {
+    return sp.name || sp.tenSanPham || sp.ten || "Sản phẩm MH MOTO";
   };
 
   // ======================================
-  // 11. XỬ LÝ ĐẶT HÀNG
+  // 11. XỬ LÝ ĐẶT HÀNG BẰNG JWT COOKIE
   // ======================================
-
   const datHang = async (e) => {
     e.preventDefault();
+
+    if (dangDatHang) return;
 
     if (!hoTen.trim() || !soDienThoai.trim() || !diaChi.trim()) {
       alert("Vui lòng nhập đầy đủ thông tin giao hàng!");
       return;
     }
 
-    if (sanPham.length === 0) {
+    if (!/^[0-9+\s.-]{9,15}$/.test(soDienThoai.trim())) {
+      alert("Số điện thoại không hợp lệ!");
+      return;
+    }
+
+    if (!sanPham || sanPham.length === 0) {
       alert("Giỏ hàng đang trống!");
       return;
     }
 
-    let user = {};
-
-    try {
-      user = JSON.parse(localStorage.getItem("user") || "{}");
-    } catch {
-      user = {};
-    }
-
     const donHang = {
-      hoTen,
-      soDienThoai,
-      diaChi,
+      hoTen: hoTen.trim(),
+      soDienThoai: soDienThoai.trim(),
+      diaChi: diaChi.trim(),
       phuongThucThanhToan: phuongThuc,
 
       items: sanPham.map((sp) => ({
         productId: sp._id || sp.id || "",
-        tenSanPham: sp.name || sp.tenSanPham || sp.ten || "Sản phẩm",
+        tenSanPham: layTenSanPham(sp),
         hinhAnh: layDuongDanAnh(sp.image || sp.hinhAnh),
-        gia: Number(sp.price ?? sp.gia ?? 0),
+        gia: layGia(sp),
         soLuong: laySoLuong(sp),
       })),
 
-      tongTien,
+      tongTien: Number(tongTien),
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/orders", {
-        method: "POST",
+      setDangDatHang(true);
 
+      const response = await fetch(`${SERVER_URL}/api/orders`, {
+        method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user.id || user._id || "",
         },
-
         body: JSON.stringify(donHang),
       });
 
-      const data = await response.json();
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Server trả về dữ liệu không hợp lệ!");
+      }
+
+      if (response.status === 401) {
+        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+        return;
+      }
+
+      if (response.status === 403) {
+        alert("Bạn không có quyền thực hiện thao tác này!");
+        return;
+      }
 
       if (!response.ok) {
-        alert(data.message || "Đặt hàng thất bại!");
-        return;
+        throw new Error(data.message || "Đặt hàng thất bại!");
       }
 
       alert("Đặt hàng thành công!");
 
-      // XÓA GIỎ HÀNG SAU KHI ĐẶT HÀNG THÀNH CÔNG
       capNhatGioHang([]);
-
       setHienThanhToan(false);
+      setHoTen("");
+      setSoDienThoai("");
+      setDiaChi("");
+      setPhuongThuc("COD");
 
       if (phuongThuc === "BANK_TRANSFER") {
         alert("Vui lòng chuyển khoản và chờ xác nhận thanh toán.");
       }
     } catch (error) {
       console.error("Lỗi đặt hàng:", error);
-
-      alert("Không thể kết nối server! Hãy kiểm tra backend.");
+      alert(error.message || "Không thể kết nối server!");
+    } finally {
+      setDangDatHang(false);
     }
   };
 
   // ======================================
-  // 12. GIAO DIỆN GIỎ HÀNG
+  // 12. GIAO DIỆN
   // ======================================
-
   return (
-    <div className="giohang-page">
-      {/* BANNER GIỎ HÀNG */}
-      <div className="giohang-banner">
-        <p>MH MOTO / GIỎ HÀNG</p>
+    <div className="mh-cart-overlay">
+      <style>{`
+        .mh-cart-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(0,0,0,.82);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          color: #eee;
+        }
 
-        <h1>GIỎ HÀNG CỦA BẠN</h1>
+        .mh-cart-container {
+          width: 100%;
+          max-width: 950px;
+          max-height: 92vh;
+          overflow-y: auto;
+          background: #101010;
+          border: 1px solid #333;
+          border-radius: 12px;
+          padding: 28px;
+          box-shadow: 0 15px 60px #000;
+        }
 
-        <span>Đam mê tốc độ - Chinh phục mọi hành trình</span>
-      </div>
+        .mh-cart-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #333;
+          padding-bottom: 18px;
+          margin-bottom: 22px;
+        }
 
-      {/* NỘI DUNG GIỎ HÀNG */}
-      <div className="giohang-container">
-        {/* ==================================
-            BÊN TRÁI: DANH SÁCH SẢN PHẨM
-        ================================== */}
+        .mh-cart-title {
+          font-size: 25px;
+          font-weight: 800;
+          letter-spacing: 1px;
+          margin: 0;
+        }
 
-        <div className="giohang-left">
-          <h2>
-            Giỏ hàng <span>({sanPham.length})</span>
+        .mh-cart-title span {
+          color: #e10600;
+        }
+
+        .mh-cart-close {
+          background: #222;
+          border: 1px solid #444;
+          color: white;
+          width: 38px;
+          height: 38px;
+          border-radius: 7px;
+          cursor: pointer;
+          font-size: 22px;
+        }
+
+        .mh-cart-close:hover {
+          background: #e10600;
+        }
+
+        .mh-cart-item {
+          display: grid;
+          grid-template-columns: 105px 1fr auto;
+          gap: 18px;
+          align-items: center;
+          padding: 17px 0;
+          border-bottom: 1px solid #292929;
+        }
+
+        .mh-cart-image {
+          width: 105px;
+          height: 95px;
+          object-fit: contain;
+          background: #1b1b1b;
+          border-radius: 8px;
+        }
+
+        .mh-cart-name {
+          font-size: 16px;
+          font-weight: 700;
+          margin-bottom: 10px;
+        }
+
+        .mh-cart-price {
+          color: #e10600;
+          font-weight: 700;
+        }
+
+        .mh-cart-quantity {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 12px;
+        }
+
+        .mh-cart-quantity button {
+          width: 30px;
+          height: 30px;
+          border: 1px solid #444;
+          background: #222;
+          color: white;
+          border-radius: 5px;
+          cursor: pointer;
+        }
+
+        .mh-cart-quantity button:hover {
+          background: #e10600;
+        }
+
+        .mh-cart-delete {
+          background: transparent;
+          border: none;
+          color: #999;
+          cursor: pointer;
+          margin-top: 10px;
+        }
+
+        .mh-cart-delete:hover {
+          color: #e10600;
+        }
+
+        .mh-cart-total {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 22px 0;
+          font-size: 18px;
+          font-weight: 700;
+        }
+
+        .mh-cart-total strong {
+          color: #e10600;
+          font-size: 24px;
+        }
+
+        .mh-cart-button {
+          border: none;
+          background: #e10600;
+          color: white;
+          font-weight: 700;
+          padding: 13px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: .2s;
+        }
+
+        .mh-cart-button:hover {
+          background: #b90000;
+          transform: translateY(-1px);
+        }
+
+        .mh-cart-button:disabled {
+          opacity: .6;
+          cursor: not-allowed;
+        }
+
+        .mh-cart-empty {
+          text-align: center;
+          padding: 55px 15px;
+          color: #aaa;
+        }
+
+        .mh-cart-empty-icon {
+          font-size: 55px;
+          margin-bottom: 15px;
+        }
+
+        .mh-checkout {
+          margin-top: 20px;
+          border-top: 1px solid #333;
+          padding-top: 22px;
+        }
+
+        .mh-checkout h3 {
+          font-size: 20px;
+          margin: 0 0 20px;
+        }
+
+        .mh-checkout label {
+          display: block;
+          margin: 14px 0 7px;
+          font-size: 14px;
+          color: #ccc;
+        }
+
+        .mh-checkout input,
+        .mh-checkout textarea,
+        .mh-checkout select {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px solid #444;
+          background: #1c1c1c;
+          color: white;
+          outline: none;
+          font-size: 14px;
+        }
+
+        .mh-checkout input:focus,
+        .mh-checkout textarea:focus,
+        .mh-checkout select:focus {
+          border-color: #e10600;
+        }
+
+        .mh-checkout textarea {
+          min-height: 85px;
+          resize: vertical;
+        }
+
+        .mh-checkout-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 20px;
+        }
+
+        .mh-cart-secondary {
+          background: #292929;
+          color: white;
+          border: 1px solid #444;
+          padding: 13px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+
+        @media(max-width:600px) {
+          .mh-cart-container {
+            padding: 17px;
+          }
+
+          .mh-cart-item {
+            grid-template-columns: 75px 1fr;
+            gap: 12px;
+          }
+
+          .mh-cart-image {
+            width: 75px;
+            height: 75px;
+          }
+
+          .mh-cart-item-total {
+            grid-column: 2;
+          }
+
+          .mh-cart-total {
+            font-size: 15px;
+          }
+
+          .mh-cart-total strong {
+            font-size: 19px;
+          }
+
+          .mh-checkout-actions {
+            flex-direction: column;
+          }
+        }
+      `}</style>
+
+      <div className="mh-cart-container">
+        <div className="mh-cart-header">
+          <h2 className="mh-cart-title">
+            GIỎ HÀNG <span>MH MOTO</span>
           </h2>
 
-          {sanPham.length === 0 ? (
-            <div className="giohang-trong">
-              <h3>Giỏ hàng đang trống!</h3>
-
-              <p>Hãy chọn chiếc moto yêu thích của bạn.</p>
-
-              <button onClick={dong}>TIẾP TỤC MUA SẮM</button>
-            </div>
-          ) : (
-            <>
-              {/* TIÊU ĐỀ BẢNG */}
-              <div className="giohang-header">
-                <span>SẢN PHẨM</span>
-                <span>GIÁ</span>
-                <span>SỐ LƯỢNG</span>
-                <span>TỔNG</span>
-              </div>
-
-              {/* DANH SÁCH SẢN PHẨM */}
-              {sanPham.map((sp, index) => {
-                const gia = Number(sp.price ?? sp.gia ?? 0);
-                const soLuong = laySoLuong(sp);
-
-                return (
-                  <div className="giohang-item" key={sp._id || sp.id || index}>
-                    {/* HÌNH ẢNH VÀ TÊN SẢN PHẨM */}
-                    <div className="giohang-thongtin">
-                      <img
-                        src={layDuongDanAnh(sp.image || sp.hinhAnh)}
-                        alt={sp.name || sp.tenSanPham || sp.ten || "Sản phẩm"}
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = "/image/fullface1.jpg";
-                        }}
-                      />
-
-                      <div>
-                        <h3>
-                          {sp.name || sp.tenSanPham || sp.ten || "Xe moto"}
-                        </h3>
-
-                        <p>MH MOTO</p>
-
-                        <button
-                          className="giohang-xoa"
-                          onClick={() => xoaSanPham(index)}
-                        >
-                          ✕ Xóa
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* GIÁ */}
-                    <div className="giohang-gia">{dinhDangTien(gia)}</div>
-
-                    {/* SỐ LƯỢNG */}
-                    <div className="giohang-soluong">
-                      <button onClick={() => giamSoLuong(index)}>−</button>
-
-                      <span>{soLuong}</span>
-
-                      <button onClick={() => tangSoLuong(index)}>+</button>
-                    </div>
-
-                    {/* TỔNG TIỀN SẢN PHẨM */}
-                    <div className="giohang-tong">
-                      {dinhDangTien(gia * soLuong)}
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
+          <button
+            className="mh-cart-close"
+            onClick={() => dong && dong()}
+            type="button"
+            aria-label="Đóng giỏ hàng"
+          >
+            ×
+          </button>
         </div>
 
-        {/* ==================================
-            BÊN PHẢI: TỔNG ĐƠN HÀNG
-        ================================== */}
+        {sanPham.length === 0 ? (
+          <div className="mh-cart-empty">
+            <div className="mh-cart-empty-icon">🛒</div>
+            <h3>Giỏ hàng đang trống</h3>
+            <p>Hãy chọn sản phẩm bạn yêu thích tại MH MOTO!</p>
 
-        <div className="giohang-right">
-          <h2>ĐƠN HÀNG</h2>
+            <button
+              className="mh-cart-button"
+              onClick={() => dong && dong()}
+              type="button"
+            >
+              TIẾP TỤC MUA SẮM
+            </button>
+          </div>
+        ) : (
+          <>
+            <p>
+              Bạn đang có <strong>{tongSoLuong}</strong> sản phẩm trong giỏ hàng
+            </p>
 
-          <div className="giohang-summary">
-            <div>
-              <span>Tạm tính</span>
-              <span>{dinhDangTien(tongTien)}</span>
-            </div>
+            {sanPham.map((sp, index) => (
+              <div className="mh-cart-item" key={sp._id || sp.id || index}>
+                <img
+                  className="mh-cart-image"
+                  src={layDuongDanAnh(sp.image || sp.hinhAnh)}
+                  alt={layTenSanPham(sp)}
+                />
 
-            <div>
-              <span>Phí vận chuyển</span>
-              <span className="mienphi">MIỄN PHÍ</span>
-            </div>
+                <div>
+                  <div className="mh-cart-name">{layTenSanPham(sp)}</div>
 
-            <div className="giohang-total">
-              <span>TỔNG TIỀN</span>
+                  <div className="mh-cart-price">
+                    {dinhDangTien(layGia(sp))}
+                  </div>
+
+                  <div className="mh-cart-quantity">
+                    <button
+                      type="button"
+                      onClick={() => thayDoiSoLuong(index, -1)}
+                    >
+                      −
+                    </button>
+
+                    <strong>{laySoLuong(sp)}</strong>
+
+                    <button
+                      type="button"
+                      onClick={() => thayDoiSoLuong(index, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    className="mh-cart-delete"
+                    type="button"
+                    onClick={() => xoaSanPham(index)}
+                  >
+                    Xóa sản phẩm
+                  </button>
+                </div>
+
+                <div className="mh-cart-item-total">
+                  <strong>{dinhDangTien(layGia(sp) * laySoLuong(sp))}</strong>
+                </div>
+              </div>
+            ))}
+
+            <div className="mh-cart-total">
+              <span>TỔNG THANH TOÁN</span>
               <strong>{dinhDangTien(tongTien)}</strong>
             </div>
 
-            {/* MỞ FORM THANH TOÁN */}
-            <button
-              className="giohang-thanhtoan"
-              disabled={sanPham.length === 0}
-              onClick={() => setHienThanhToan(true)}
-            >
-              TIẾN HÀNH THANH TOÁN →
-            </button>
-
-            {/* TIẾP TỤC MUA SẮM */}
-            <button className="giohang-tieptuc" onClick={dong}>
-              ← TIẾP TỤC MUA SẮM
-            </button>
-
-            <p className="giohang-note">
-              🔒 Thông tin thanh toán được bảo mật.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ======================================
-          13. FORM THANH TOÁN
-      ====================================== */}
-
-      {hienThanhToan && (
-        <div className="thanhtoan-overlay">
-          <div className="thanhtoan-form">
-            {/* NÚT ĐÓNG */}
-            <button
-              className="thanhtoan-dong"
-              onClick={() => setHienThanhToan(false)}
-            >
-              ✕
-            </button>
-
-            <h2>THÔNG TIN ĐẶT HÀNG</h2>
-
-            <p>MH MOTO - Đam mê tốc độ</p>
-
-            <form onSubmit={datHang}>
-              {/* HỌ TÊN */}
-              <label>Họ và tên</label>
-
-              <input
-                type="text"
-                value={hoTen}
-                onChange={(e) => setHoTen(e.target.value)}
-                placeholder="Nhập họ và tên"
-                required
-              />
-
-              {/* SỐ ĐIỆN THOẠI */}
-              <label>Số điện thoại</label>
-
-              <input
-                type="tel"
-                value={soDienThoai}
-                onChange={(e) => setSoDienThoai(e.target.value)}
-                placeholder="Nhập số điện thoại"
-                required
-              />
-
-              {/* ĐỊA CHỈ */}
-              <label>Địa chỉ giao hàng</label>
-
-              <textarea
-                value={diaChi}
-                onChange={(e) => setDiaChi(e.target.value)}
-                placeholder="Nhập địa chỉ giao hàng"
-                required
-              />
-
-              {/* PHƯƠNG THỨC THANH TOÁN */}
-              <label>Phương thức thanh toán</label>
-
-              <select
-                value={phuongThuc}
-                onChange={(e) => setPhuongThuc(e.target.value)}
+            {!hienThanhToan ? (
+              <button
+                className="mh-cart-button"
+                type="button"
+                style={{ width: "100%" }}
+                onClick={() => setHienThanhToan(true)}
               >
-                <option value="COD">Thanh toán khi nhận hàng (COD)</option>
-
-                <option value="BANK_TRANSFER">Chuyển khoản ngân hàng</option>
-              </select>
-
-              {/* MÃ QR CHUYỂN KHOẢN */}
-              {phuongThuc === "BANK_TRANSFER" && (
-                <div className="thanhtoan-qr">
-                  <h3>QUÉT MÃ QR ĐỂ CHUYỂN KHOẢN</h3>
-
-                  <p>
-                    Sau khi đặt hàng, vui lòng chuyển khoản và chờ xác nhận.
-                  </p>
-
-                  <img
-                    src="https://img.vietqr.io/image/VCB-1234567890-compact2.png?amount=0&addInfo=Thanh%20toan%20MH%20MOTO"
-                    alt="QR chuyển khoản"
-                  />
-
-                  <p>Ngân hàng: VP BANK</p>
-                  <p>Số tài khoản: 0923117504</p>
-                  <p>Chủ tài khoản: HOANG MINH HOA</p>
-                </div>
-              )}
-
-              {/* TỔNG TIỀN */}
-              <div className="thanhtoan-tong">
-                <span>Tổng tiền:</span>
-
-                <strong>{dinhDangTien(tongTien)}</strong>
-              </div>
-
-              {/* XÁC NHẬN ĐẶT HÀNG */}
-              <button type="submit" className="thanhtoan-xacnhan">
-                XÁC NHẬN ĐẶT HÀNG
+                TIẾN HÀNH ĐẶT HÀNG
               </button>
-            </form>
-          </div>
-        </div>
-      )}
+            ) : (
+              <form className="mh-checkout" onSubmit={datHang}>
+                <h3>THÔNG TIN ĐẶT HÀNG</h3>
+
+                <label>Họ và tên người nhận</label>
+                <input
+                  type="text"
+                  value={hoTen}
+                  onChange={(e) => setHoTen(e.target.value)}
+                  placeholder="Nhập họ và tên"
+                  required
+                />
+
+                <label>Số điện thoại</label>
+                <input
+                  type="tel"
+                  value={soDienThoai}
+                  onChange={(e) => setSoDienThoai(e.target.value)}
+                  placeholder="Nhập số điện thoại"
+                  required
+                />
+
+                <label>Địa chỉ giao hàng</label>
+                <textarea
+                  value={diaChi}
+                  onChange={(e) => setDiaChi(e.target.value)}
+                  placeholder="Nhập địa chỉ nhận hàng"
+                  required
+                />
+
+                <label>Phương thức thanh toán</label>
+                <select
+                  value={phuongThuc}
+                  onChange={(e) => setPhuongThuc(e.target.value)}
+                >
+                  <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+
+                  <option value="BANK_TRANSFER">Chuyển khoản ngân hàng</option>
+                </select>
+
+                <div className="mh-cart-total">
+                  <span>THÀNH TIỀN</span>
+                  <strong>{dinhDangTien(tongTien)}</strong>
+                </div>
+
+                <div className="mh-checkout-actions">
+                  <button
+                    className="mh-cart-button"
+                    type="submit"
+                    disabled={dangDatHang}
+                  >
+                    {dangDatHang ? "ĐANG XỬ LÝ..." : "XÁC NHẬN ĐẶT HÀNG"}
+                  </button>
+
+                  <button
+                    className="mh-cart-secondary"
+                    type="button"
+                    onClick={() => setHienThanhToan(false)}
+                  >
+                    QUAY LẠI
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

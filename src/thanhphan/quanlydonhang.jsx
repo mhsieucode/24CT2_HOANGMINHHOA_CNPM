@@ -1,19 +1,44 @@
 import { useEffect, useState, useCallback } from "react";
 import "../App.css";
 
-const API = "http://localhost:5000";
+// ======================================
+// 1. CẤU HÌNH SERVER
+// ======================================
 
-function QuanLyDonHang() {
+const API = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(
+  /\/$/,
+  ""
+);
+
+// ======================================
+// 2. COMPONENT QUẢN LÝ ĐƠN HÀNG
+// ======================================
+
+function QuanLyDonHang({ dong }) {
   const [donHang, setDonHang] = useState([]);
   const [products, setProducts] = useState([]);
   const [dangTai, setDangTai] = useState(true);
   const [dangCapNhat, setDangCapNhat] = useState("");
-
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user._id || user.id || "";
+  const [loi, setLoi] = useState("");
 
   // ======================================
-  // LẤY ID SẢN PHẨM
+  // 3. ĐỌC JSON AN TOÀN
+  // ======================================
+
+  const docJSON = async (response) => {
+    const text = await response.text();
+
+    if (!text) return {};
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("Server trả về dữ liệu không hợp lệ!");
+    }
+  };
+
+  // ======================================
+  // 4. LẤY ID SẢN PHẨM
   // ======================================
 
   const layProductId = (sp) => {
@@ -29,7 +54,7 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // CHUẨN HÓA ĐƯỜNG DẪN ẢNH
+  // 5. CHUẨN HÓA ĐƯỜNG DẪN ẢNH
   // ======================================
 
   const layDuongDanAnh = (hinhAnh) => {
@@ -68,7 +93,7 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // ĐỊNH DẠNG TIỀN
+  // 6. ĐỊNH DẠNG TIỀN
   // ======================================
 
   const dinhDangTien = (gia) => {
@@ -76,25 +101,37 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // LẤY ĐƠN HÀNG VÀ SẢN PHẨM
+  // 7. LẤY DANH SÁCH ĐƠN HÀNG
+  // JWT COOKIE
   // ======================================
 
   const layDonHang = useCallback(async () => {
     try {
       setDangTai(true);
+      setLoi("");
 
       const [responseSanPham, responseDonHang] = await Promise.all([
-        fetch(`${API}/api/products`),
+        fetch(`${API}/api/products`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
+        }),
 
         fetch(`${API}/api/admin/orders`, {
+          method: "GET",
+          credentials: "include",
           headers: {
-            "x-user-id": userId,
+            Accept: "application/json",
           },
         }),
       ]);
 
-      const dataSanPham = await responseSanPham.json();
-      const dataDonHang = await responseDonHang.json();
+      const [dataSanPham, dataDonHang] = await Promise.all([
+        docJSON(responseSanPham),
+        docJSON(responseDonHang),
+      ]);
 
       if (!responseSanPham.ok) {
         throw new Error(
@@ -103,6 +140,16 @@ function QuanLyDonHang() {
       }
 
       if (!responseDonHang.ok) {
+        if (responseDonHang.status === 401) {
+          throw new Error(
+            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!"
+          );
+        }
+
+        if (responseDonHang.status === 403) {
+          throw new Error("Tài khoản không có quyền xem danh sách đơn hàng!");
+        }
+
         throw new Error(
           dataDonHang.message || "Không thể lấy danh sách đơn hàng!"
         );
@@ -112,22 +159,31 @@ function QuanLyDonHang() {
         ? dataSanPham
         : dataSanPham.products || [];
 
+      const danhSachDonHang = Array.isArray(dataDonHang)
+        ? dataDonHang
+        : dataDonHang.orders || dataDonHang.donHang || [];
+
       setProducts(danhSachSanPham);
-      setDonHang(dataDonHang.orders || []);
+      setDonHang(danhSachDonHang);
     } catch (error) {
-      console.error("Lỗi lấy đơn hàng:", error);
-      alert(error.message || "Không thể kết nối đến server!");
+      console.error("LỖI LẤY ĐƠN HÀNG:", error);
+
+      setLoi(error.message || "Không thể kết nối đến server!");
     } finally {
       setDangTai(false);
     }
-  }, [userId]);
+  }, []);
+
+  // ======================================
+  // 8. TỰ ĐỘNG TẢI ĐƠN HÀNG
+  // ======================================
 
   useEffect(() => {
     layDonHang();
   }, [layDonHang]);
 
   // ======================================
-  // TÌM SẢN PHẨM TRONG DATABASE
+  // 9. TÌM SẢN PHẨM TRONG DATABASE
   // ======================================
 
   const timSanPham = (sp) => {
@@ -141,7 +197,7 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // LẤY THÔNG TIN SẢN PHẨM
+  // 10. LẤY THÔNG TIN SẢN PHẨM
   // ======================================
 
   const layThongTinSanPham = (sp) => {
@@ -178,36 +234,53 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+  // 11. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+  // JWT COOKIE
   // ======================================
 
   const capNhatTrangThai = async (id, trangThaiMoi) => {
+    if (!id || dangCapNhat) return;
+
     try {
       setDangCapNhat(id);
+      setLoi("");
 
       const response = await fetch(`${API}/api/admin/orders/${id}/status`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId,
+          Accept: "application/json",
         },
         body: JSON.stringify({
           trangThaiDonHang: trangThaiMoi,
         }),
       });
 
-      const data = await response.json();
+      const data = await docJSON(response);
 
       if (!response.ok) {
-        throw new Error(data.message || "Cập nhật trạng thái thất bại!");
+        if (response.status === 401) {
+          throw new Error(
+            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!"
+          );
+        }
+
+        if (response.status === 403) {
+          throw new Error("Tài khoản không có quyền cập nhật đơn hàng!");
+        }
+
+        throw new Error(
+          data.message || "Cập nhật trạng thái đơn hàng thất bại!"
+        );
       }
 
       setDonHang((danhSachCu) =>
         danhSachCu.map((don) =>
-          don._id === id
+          String(don._id) === String(id)
             ? {
                 ...don,
-                trangThaiDonHang: trangThaiMoi,
+                trangThaiDonHang: data.order?.trangThaiDonHang || trangThaiMoi,
               }
             : don
         )
@@ -215,7 +288,8 @@ function QuanLyDonHang() {
 
       alert("Cập nhật trạng thái thành công!");
     } catch (error) {
-      console.error("Lỗi cập nhật trạng thái:", error);
+      console.error("LỖI CẬP NHẬT TRẠNG THÁI:", error);
+
       alert(error.message || "Không thể kết nối đến server!");
     } finally {
       setDangCapNhat("");
@@ -223,7 +297,7 @@ function QuanLyDonHang() {
   };
 
   // ======================================
-  // THỐNG KÊ ĐƠN HÀNG
+  // 12. THỐNG KÊ ĐƠN HÀNG
   // ======================================
 
   const tongDonHang = donHang.length;
@@ -245,20 +319,35 @@ function QuanLyDonHang() {
   ).length;
 
   // ======================================
-  // GIAO DIỆN ĐANG TẢI
+  // 13. GIAO DIỆN ĐANG TẢI
   // ======================================
 
   if (dangTai) {
     return (
-      <div className="donhang-loading">
-        <div className="donhang-spinner"></div>
-        Đang tải đơn hàng...
+      <div className="quan-ly-don-hang">
+        <div className="donhang-header">
+          <div>
+            <h2>QUẢN LÝ ĐƠN HÀNG</h2>
+            <p>MH MOTO · Quản lý đơn đặt hàng</p>
+          </div>
+
+          {typeof dong === "function" && (
+            <button type="button" onClick={dong}>
+              ← Quay lại
+            </button>
+          )}
+        </div>
+
+        <div className="donhang-loading">
+          <div className="donhang-spinner"></div>
+          Đang tải đơn hàng...
+        </div>
       </div>
     );
   }
 
   // ======================================
-  // GIAO DIỆN QUẢN LÝ ĐƠN HÀNG
+  // 14. GIAO DIỆN QUẢN LÝ ĐƠN HÀNG
   // ======================================
 
   return (
@@ -271,10 +360,34 @@ function QuanLyDonHang() {
           <p>MH MOTO · Quản lý đơn đặt hàng</p>
         </div>
 
-        <button type="button" onClick={layDonHang}>
-          ↻ Làm mới
-        </button>
+        <div className="donhang-header-actions">
+          {typeof dong === "function" && (
+            <button type="button" onClick={dong}>
+              ← Quay lại Dashboard
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={layDonHang}
+            disabled={dangTai || dangCapNhat !== ""}
+          >
+            ↻ Làm mới
+          </button>
+        </div>
       </div>
+
+      {/* THÔNG BÁO LỖI */}
+
+      {loi && (
+        <div className="donhang-loi">
+          <p>{loi}</p>
+
+          <button type="button" onClick={layDonHang}>
+            Thử lại
+          </button>
+        </div>
+      )}
 
       {/* THỐNG KÊ */}
 
@@ -310,7 +423,12 @@ function QuanLyDonHang() {
       {donHang.length === 0 ? (
         <div className="donhang-trong">
           <span>📦</span>
-          <p>Chưa có đơn hàng nào!</p>
+
+          <p>
+            {loi
+              ? "Không thể tải danh sách đơn hàng."
+              : "Chưa có đơn hàng nào!"}
+          </p>
         </div>
       ) : (
         <div className="donhang-danh-sach">
@@ -356,8 +474,6 @@ function QuanLyDonHang() {
                             className="donhang-san-pham-item"
                             key={sp.productId || sp._id || index}
                           >
-                            {/* ẢNH SẢN PHẨM */}
-
                             <div className="donhang-anh-san-pham">
                               {sanPham.hinhAnh ? (
                                 <>
@@ -391,8 +507,6 @@ function QuanLyDonHang() {
                                 </div>
                               )}
                             </div>
-
-                            {/* THÔNG TIN SẢN PHẨM */}
 
                             <div className="donhang-san-pham-info">
                               <p>{sanPham.tenSanPham}</p>
@@ -444,12 +558,20 @@ function QuanLyDonHang() {
 
                     <div>
                       <span>Phương thức thanh toán</span>
+
                       <strong>
                         {don.phuongThucThanhToan === "COD"
                           ? "Thanh toán khi nhận hàng"
                           : "Chuyển khoản ngân hàng"}
                       </strong>
                     </div>
+
+                    {don.trangThaiThanhToan && (
+                      <div>
+                        <span>Trạng thái thanh toán</span>
+                        <strong>{don.trangThaiThanhToan}</strong>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -461,17 +583,13 @@ function QuanLyDonHang() {
 
                 <select
                   value={don.trangThaiDonHang || "Chờ xác nhận"}
-                  disabled={dangCapNhat === don._id}
+                  disabled={dangCapNhat !== ""}
                   onChange={(e) => capNhatTrangThai(don._id, e.target.value)}
                 >
                   <option value="Chờ xác nhận">Chờ xác nhận</option>
-
                   <option value="Đã xác nhận">Đã xác nhận</option>
-
                   <option value="Đang giao hàng">Đang giao hàng</option>
-
                   <option value="Đã hoàn thành">Đã hoàn thành</option>
-
                   <option value="Đã hủy">Đã hủy</option>
                 </select>
 
