@@ -718,7 +718,18 @@ app.post("/api/orders", kiemTraTaiKhoan, async (req, res) => {
       const danhSachSanPham = [];
 
       for (const [productId, soLuong] of sanPhamGop) {
+        console.log("================================");
+        console.log("KIỂM TRA SẢN PHẨM KHI ĐẶT HÀNG");
+        console.log("Product ID nhận được:", productId);
+        console.log("Số lượng đặt:", soLuong);
+        console.log("Collection:", Product.collection.name);
+
         const product = await Product.findById(productId).session(session);
+
+        console.log(
+          "Kết quả tìm sản phẩm:",
+          product ? product.tenSanPham : "KHÔNG TÌM THẤY"
+        );
 
         if (!product) {
           throw Object.assign(new Error("Không tìm thấy sản phẩm!"), {

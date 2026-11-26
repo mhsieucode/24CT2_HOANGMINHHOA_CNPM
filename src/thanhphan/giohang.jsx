@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SERVER_URL = "http://localhost:5000";
 
 // ======================================
 // 1. HÀM XỬ LÝ ẢNH
 // ======================================
+
 const layDuongDanAnh = (anh) => {
   if (!anh) return "/image/fullface1.jpg";
 
@@ -27,6 +28,7 @@ const layDuongDanAnh = (anh) => {
 // ======================================
 // 2. HÀM LẤY SỐ LƯỢNG
 // ======================================
+
 const laySoLuong = (sp) => {
   return Math.max(1, Number(sp.soLuong ?? sp.quantity ?? 1));
 };
@@ -34,20 +36,38 @@ const laySoLuong = (sp) => {
 // ======================================
 // 3. HÀM LẤY GIÁ
 // ======================================
+
 const layGia = (sp) => {
   return Number(sp.gia ?? sp.price ?? 0);
 };
 
 // ======================================
-// 4. ĐỊNH DẠNG TIỀN
+// 4. LẤY ID SẢN PHẨM
 // ======================================
+
+const layIdSanPham = (sp) => {
+  const id =
+    sp?.productId?._id ||
+    sp?.productId?.id ||
+    sp?.productId ||
+    sp?._id ||
+    sp?.id;
+
+  return id ? String(id) : "";
+};
+
+// ======================================
+// 5. ĐỊNH DẠNG TIỀN
+// ======================================
+
 const dinhDangTien = (soTien) => {
   return Number(soTien || 0).toLocaleString("vi-VN") + " ₫";
 };
 
 // ======================================
-// 5. COMPONENT GIỎ HÀNG
+// 6. COMPONENT GIỎ HÀNG
 // ======================================
+
 function GioHang({ dong }) {
   const [sanPham, setSanPham] = useState(() => {
     try {
@@ -64,18 +84,165 @@ function GioHang({ dong }) {
   const [diaChi, setDiaChi] = useState("");
   const [phuongThuc, setPhuongThuc] = useState("COD");
   const [dangDatHang, setDangDatHang] = useState(false);
+  const [dangDongBo, setDangDongBo] = useState(true);
 
   // ======================================
-  // 6. CẬP NHẬT GIỎ HÀNG
+  // 7. CẬP NHẬT GIỎ HÀNG
   // ======================================
+
   const capNhatGioHang = (danhSachMoi) => {
     setSanPham(danhSachMoi);
     localStorage.setItem("gioHang", JSON.stringify(danhSachMoi));
   };
 
   // ======================================
-  // 7. TĂNG / GIẢM SỐ LƯỢNG
+  // 8. ĐỒNG BỘ GIỎ HÀNG VỚI DATABASE
   // ======================================
+
+  const dongBoGioHang = async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/products`);
+
+      if (!response.ok) {
+        throw new Error("Không thể lấy danh sách sản phẩm từ server!");
+      }
+
+      const data = await response.json();
+
+      const danhSachSanPham = Array.isArray(data)
+        ? data
+        : Array.isArray(data.products)
+        ? data.products
+        : null;
+
+      if (!danhSachSanPham) {
+        throw new Error("Danh sách sản phẩm trả về không hợp lệ!");
+      }
+
+      const idSanPhamConTonTai = new Set(
+        danhSachSanPham.map((sp) => layIdSanPham(sp)).filter(Boolean)
+      );
+
+      // Lấy dữ liệu giỏ hàng mới nhất
+      const gioHangHienTai = JSON.parse(
+        localStorage.getItem("gioHang") || "[]"
+      );
+
+      if (!Array.isArray(gioHangHienTai)) {
+        throw new Error("Dữ liệu giỏ hàng không hợp lệ!");
+      }
+
+      // Loại sản phẩm đã bị xóa khỏi database
+      // Sản phẩm không có ID được giữ lại để tránh mất dữ liệu cũ
+      const gioHangMoi = gioHangHienTai.filter((sp) => {
+        const id = layIdSanPham(sp);
+
+        if (!id) return true;
+
+        return idSanPhamConTonTai.has(id);
+      });
+
+      localStorage.setItem("gioHang", JSON.stringify(gioHangMoi));
+      setSanPham(gioHangMoi);
+
+      if (gioHangMoi.length < gioHangHienTai.length) {
+        console.log(
+          "MH MOTO: Đã tự động xóa sản phẩm không còn tồn tại khỏi giỏ hàng!"
+        );
+      }
+
+      return {
+        thanhCong: true,
+        gioHang: gioHangMoi,
+      };
+    } catch (error) {
+      console.error("LỖI ĐỒNG BỘ GIỎ HÀNG:", error);
+
+      return {
+        thanhCong: false,
+        gioHang: sanPham,
+        loi: error.message,
+      };
+    }
+  };
+
+  // ======================================
+  // 9. TỰ ĐỘNG ĐỒNG BỘ KHI MỞ GIỎ HÀNG
+  // ======================================
+
+  useEffect(() => {
+    let daHuy = false;
+
+    const kiemTraGioHang = async () => {
+      setDangDongBo(true);
+
+      try {
+        const response = await fetch(`${SERVER_URL}/api/products`);
+
+        if (!response.ok) {
+          throw new Error("Không thể lấy danh sách sản phẩm!");
+        }
+
+        const data = await response.json();
+
+        const danhSachSanPham = Array.isArray(data)
+          ? data
+          : Array.isArray(data.products)
+          ? data.products
+          : null;
+
+        if (!danhSachSanPham) {
+          throw new Error("Dữ liệu sản phẩm không hợp lệ!");
+        }
+
+        const idSanPhamConTonTai = new Set(
+          danhSachSanPham.map((sp) => layIdSanPham(sp)).filter(Boolean)
+        );
+
+        const gioHangHienTai = JSON.parse(
+          localStorage.getItem("gioHang") || "[]"
+        );
+
+        if (!Array.isArray(gioHangHienTai)) {
+          throw new Error("Dữ liệu giỏ hàng không hợp lệ!");
+        }
+
+        const gioHangMoi = gioHangHienTai.filter((sp) => {
+          const id = layIdSanPham(sp);
+
+          if (!id) return true;
+
+          return idSanPhamConTonTai.has(id);
+        });
+
+        if (daHuy) return;
+
+        localStorage.setItem("gioHang", JSON.stringify(gioHangMoi));
+        setSanPham(gioHangMoi);
+
+        if (gioHangMoi.length !== gioHangHienTai.length) {
+          console.log("Đã loại sản phẩm bị xóa khỏi giỏ hàng!");
+        }
+      } catch (error) {
+        console.error("LỖI KIỂM TRA GIỎ HÀNG:", error);
+      } finally {
+        if (!daHuy) {
+          setDangDongBo(false);
+        }
+      }
+    };
+
+    kiemTraGioHang();
+
+    return () => {
+      daHuy = true;
+    };
+  }, []);
+
+  // ======================================
+  // 10. TĂNG / GIẢM SỐ LƯỢNG
+  // ======================================
+
   const thayDoiSoLuong = (index, thayDoi) => {
     const danhSachMoi = [...sanPham];
 
@@ -95,8 +262,9 @@ function GioHang({ dong }) {
   };
 
   // ======================================
-  // 8. XÓA SẢN PHẨM
+  // 11. XÓA SẢN PHẨM
   // ======================================
+
   const xoaSanPham = (index) => {
     const danhSachMoi = sanPham.filter((_, i) => i !== index);
 
@@ -104,8 +272,9 @@ function GioHang({ dong }) {
   };
 
   // ======================================
-  // 9. TÍNH TỔNG TIỀN
+  // 12. TÍNH TỔNG TIỀN
   // ======================================
+
   const tongTien = sanPham.reduce((tong, sp) => {
     return tong + layGia(sp) * laySoLuong(sp);
   }, 0);
@@ -115,15 +284,17 @@ function GioHang({ dong }) {
   }, 0);
 
   // ======================================
-  // 10. LẤY TÊN SẢN PHẨM
+  // 13. LẤY TÊN SẢN PHẨM
   // ======================================
+
   const layTenSanPham = (sp) => {
     return sp.name || sp.tenSanPham || sp.ten || "Sản phẩm MH MOTO";
   };
 
   // ======================================
-  // 11. XỬ LÝ ĐẶT HÀNG BẰNG JWT COOKIE
+  // 14. XỬ LÝ ĐẶT HÀNG BẰNG JWT COOKIE
   // ======================================
+
   const datHang = async (e) => {
     e.preventDefault();
 
@@ -144,25 +315,43 @@ function GioHang({ dong }) {
       return;
     }
 
-    const donHang = {
-      hoTen: hoTen.trim(),
-      soDienThoai: soDienThoai.trim(),
-      diaChi: diaChi.trim(),
-      phuongThucThanhToan: phuongThuc,
-
-      items: sanPham.map((sp) => ({
-        productId: sp._id || sp.id || "",
-        tenSanPham: layTenSanPham(sp),
-        hinhAnh: layDuongDanAnh(sp.image || sp.hinhAnh),
-        gia: layGia(sp),
-        soLuong: laySoLuong(sp),
-      })),
-
-      tongTien: Number(tongTien),
-    };
-
     try {
       setDangDatHang(true);
+
+      // KIỂM TRA LẠI SẢN PHẨM TRƯỚC KHI ĐẶT HÀNG
+      const ketQuaDongBo = await dongBoGioHang();
+
+      if (!ketQuaDongBo.thanhCong) {
+        throw new Error("Không thể kiểm tra sản phẩm. Vui lòng thử lại!");
+      }
+
+      const gioHangHienTai = ketQuaDongBo.gioHang;
+
+      if (gioHangHienTai.length === 0) {
+        alert(
+          "Các sản phẩm trong giỏ hàng không còn tồn tại. Vui lòng chọn sản phẩm khác!"
+        );
+        return;
+      }
+
+      const donHang = {
+        hoTen: hoTen.trim(),
+        soDienThoai: soDienThoai.trim(),
+        diaChi: diaChi.trim(),
+        phuongThucThanhToan: phuongThuc,
+
+        items: gioHangHienTai.map((sp) => ({
+          productId: layIdSanPham(sp),
+          tenSanPham: layTenSanPham(sp),
+          hinhAnh: layDuongDanAnh(sp.image || sp.hinhAnh),
+          gia: layGia(sp),
+          soLuong: laySoLuong(sp),
+        })),
+
+        tongTien: gioHangHienTai.reduce((tong, sp) => {
+          return tong + layGia(sp) * laySoLuong(sp);
+        }, 0),
+      };
 
       const response = await fetch(`${SERVER_URL}/api/orders`, {
         method: "POST",
@@ -216,8 +405,9 @@ function GioHang({ dong }) {
   };
 
   // ======================================
-  // 12. GIAO DIỆN
+  // 15. GIAO DIỆN
   // ======================================
+
   return (
     <div className="mh-cart-overlay">
       <style>{`
@@ -495,7 +685,11 @@ function GioHang({ dong }) {
           </button>
         </div>
 
-        {sanPham.length === 0 ? (
+        {dangDongBo ? (
+          <div className="mh-cart-empty">
+            <p>Đang kiểm tra giỏ hàng...</p>
+          </div>
+        ) : sanPham.length === 0 ? (
           <div className="mh-cart-empty">
             <div className="mh-cart-empty-icon">🛒</div>
             <h3>Giỏ hàng đang trống</h3>
@@ -516,7 +710,7 @@ function GioHang({ dong }) {
             </p>
 
             {sanPham.map((sp, index) => (
-              <div className="mh-cart-item" key={sp._id || sp.id || index}>
+              <div className="mh-cart-item" key={layIdSanPham(sp) || index}>
                 <img
                   className="mh-cart-image"
                   src={layDuongDanAnh(sp.image || sp.hinhAnh)}
