@@ -6,7 +6,9 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
+    // ======================================
     // THÔNG TIN KHÁCH HÀNG
+    // ======================================
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -44,7 +46,6 @@ const orderSchema = new mongoose.Schema(
           required: true,
         },
 
-        // ĐƯỜNG DẪN ẢNH XE
         hinhAnh: {
           type: String,
           default: "",
@@ -96,6 +97,10 @@ const orderSchema = new mongoose.Schema(
       default: "Chờ xác nhận",
     },
 
+    // ======================================
+    // QUẢN LÝ KHO HÀNG
+    // ======================================
+
     // ĐÃ TRỪ SỐ LƯỢNG SẢN PHẨM KHỎI KHO
     daTruKho: {
       type: Boolean,
@@ -106,6 +111,29 @@ const orderSchema = new mongoose.Schema(
     daHoanKho: {
       type: Boolean,
       default: false,
+    },
+
+    // ======================================
+    // QUẢN LÝ HOÀN TIỀN
+    // ======================================
+
+    // TRẠNG THÁI HOÀN TIỀN
+    trangThaiHoanTien: {
+      type: String,
+      enum: ["Không yêu cầu", "Chờ xử lý", "Đã hoàn tiền", "Từ chối"],
+      default: "Không yêu cầu",
+    },
+
+    // NGÀY XÁC NHẬN HOÀN TIỀN
+    ngayHoanTien: {
+      type: Date,
+      default: null,
+    },
+
+    // GHI CHÚ XỬ LÝ HOÀN TIỀN
+    ghiChuHoanTien: {
+      type: String,
+      default: "",
     },
   },
   {

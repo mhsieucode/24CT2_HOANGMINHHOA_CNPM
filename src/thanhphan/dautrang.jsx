@@ -5,9 +5,15 @@ function DauTrang({
   xuLyDangXuat,
   moGioHang,
   dongGioHang,
+  moLichSuMuaHang,
+  dongLichSuMuaHang,
 }) {
   const veTrang = (id) => {
     dongGioHang();
+
+    // Đóng lịch sử mua hàng trước khi quay về trang chủ
+    dongLichSuMuaHang?.();
+
     setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({
         behavior: "smooth",
@@ -18,7 +24,7 @@ function DauTrang({
   return (
     <nav className="navbar">
       <div className="logo">
-        <img src="/image/logo1.jpg" alt="MOTO SHOP" />
+        <img src="/image/logo1.jpg" alt="MH MOTO" />
         <h2>
           MH <span>MOTO</span>
         </h2>
@@ -44,6 +50,12 @@ function DauTrang({
         <button className="cart-btn" onClick={moGioHang}>
           🛒
         </button>
+
+        {user?.role === "customer" && (
+          <button className="order-history-btn" onClick={moLichSuMuaHang}>
+            ĐƠN HÀNG CỦA TÔI
+          </button>
+        )}
 
         {!user ? (
           <div className="auth-buttons">

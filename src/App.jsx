@@ -18,6 +18,7 @@ import NhanVien from "./thanhphan/nhanvien";
 import GioHang from "./thanhphan/giohang";
 import QuanLySanPham from "./thanhphan/quanlysanpham";
 import ChatBox from "./thanhphan/chatbox";
+import LichSuMuaHang from "./thanhphan/lichsumuahang";
 
 // ======================================
 // ĐỊA CHỈ BACKEND
@@ -40,6 +41,12 @@ function App() {
   const [hienGioHang, setHienGioHang] = useState(false);
 
   // ======================================
+  // HIỂN THỊ LỊCH SỬ MUA HÀNG
+  // ======================================
+
+  const [hienLichSuMuaHang, setHienLichSuMuaHang] = useState(false);
+
+  // ======================================
   // QUẢN LÝ SẢN PHẨM
   // ======================================
 
@@ -54,6 +61,7 @@ function App() {
   const chonDanhMuc = (danhMuc) => {
     setDanhMucDangChon(danhMuc);
     setHienGioHang(false);
+    setHienLichSuMuaHang(false);
 
     setTimeout(() => {
       document.getElementById("sanpham")?.scrollIntoView({
@@ -130,6 +138,7 @@ function App() {
     setHienDangKy(false);
 
     setHienGioHang(false);
+    setHienLichSuMuaHang(false);
     setHienQuanLySanPham(false);
 
     console.log("TÀI KHOẢN ĐÃ ĐĂNG NHẬP:", userData);
@@ -153,10 +162,11 @@ function App() {
         return;
       }
 
-      // Xóa trạng thái tài khoản trên giao diện
+      // XÓA TRẠNG THÁI TÀI KHOẢN
       setUser(null);
 
       setHienGioHang(false);
+      setHienLichSuMuaHang(false);
       setHienQuanLySanPham(false);
       setHienDangNhap(false);
       setHienDangKy(false);
@@ -180,6 +190,21 @@ function App() {
 
   const moGioHang = () => {
     setHienGioHang(true);
+    setHienLichSuMuaHang(false);
+  };
+
+  // ======================================
+  // MỞ LỊCH SỬ MUA HÀNG
+  // ======================================
+
+  const moLichSuMuaHang = () => {
+    if (!user || user.role !== "customer") {
+      alert("Vui lòng đăng nhập bằng tài khoản khách hàng!");
+      return;
+    }
+
+    setHienGioHang(false);
+    setHienLichSuMuaHang(true);
   };
 
   // ======================================
@@ -254,12 +279,15 @@ function App() {
               xuLyDangXuat={xuLyDangXuat}
               moGioHang={moGioHang}
               dongGioHang={dongGioHang}
+              moLichSuMuaHang={moLichSuMuaHang}
             />
 
             {/* NỘI DUNG WEBSITE */}
 
             {hienGioHang ? (
               <GioHang dong={dongGioHang} />
+            ) : hienLichSuMuaHang ? (
+              <LichSuMuaHang dong={() => setHienLichSuMuaHang(false)} />
             ) : (
               <>
                 {/* TRANG CHỦ */}

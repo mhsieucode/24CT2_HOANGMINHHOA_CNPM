@@ -5771,3 +5771,830 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.lichsu-container {
+  width: 100%;
+  min-height: 65vh;
+  padding: 35px 25px 60px;
+  background: #080808;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.lichsu-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto 30px;
+  border-bottom: 1px solid #292929;
+  padding-bottom: 22px;
+}
+
+.lichsu-subtitle {
+  color: #e10600;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  margin: 0 0 8px;
+}
+
+.lichsu-heading h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.lichsu-description {
+  color: #999;
+  margin: 9px 0 0;
+  font-size: 14px;
+}
+
+.lichsu-back,
+.lichsu-empty button,
+.lichsu-error button {
+  border: 1px solid #e10600;
+  background: transparent;
+  color: #fff;
+  padding: 11px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.lichsu-back:hover,
+.lichsu-empty button:hover,
+.lichsu-error button:hover {
+  background: #e10600;
+}
+
+.lichsu-list {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lichsu-order {
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lichsu-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 20px;
+  background: #151515;
+  border-bottom: 1px solid #292929;
+}
+
+.lichsu-label {
+  display: block;
+  color: #888;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin-bottom: 5px;
+}
+
+.lichsu-order-header strong {
+  color: #fff;
+}
+
+.lichsu-order-header p {
+  color: #999;
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.lichsu-status {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.status-pending {
+  color: #ffc857;
+  background: #3a2d10;
+}
+
+.status-completed {
+  color: #65d994;
+  background: #123321;
+}
+
+.status-cancelled {
+  color: #ff7777;
+  background: #3a1717;
+}
+
+.lichsu-products {
+  padding: 5px 20px;
+}
+
+.lichsu-product {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid #252525;
+}
+
+.lichsu-product:last-child {
+  border-bottom: none;
+}
+
+.lichsu-product img {
+  width: 75px;
+  height: 65px;
+  object-fit: contain;
+  background: #1b1b1b;
+  border-radius: 5px;
+}
+
+.lichsu-product-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.lichsu-product-info strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.lichsu-product-info span {
+  color: #999;
+  font-size: 12px;
+}
+
+.lichsu-product-price {
+  color: #e10600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.lichsu-order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 20px;
+  background: #151515;
+  border-top: 1px solid #292929;
+}
+
+.lichsu-payment p {
+  color: #999;
+  font-size: 12px;
+  margin: 5px 0;
+}
+
+.lichsu-payment strong {
+  color: #ddd;
+}
+
+.lichsu-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.lichsu-total span {
+  color: #999;
+  font-size: 12px;
+}
+
+.lichsu-total strong {
+  color: #e10600;
+  font-size: 21px;
+}
+
+.lichsu-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 18px;
+}
+
+.lichsu-cancel {
+  border: 1px solid #e10600;
+  background: #e10600;
+  color: #fff;
+  padding: 10px 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.lichsu-cancel:hover {
+  background: #a90000;
+}
+
+.lichsu-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lichsu-message,
+.lichsu-empty {
+  max-width: 1100px;
+  margin: 35px auto;
+  padding: 45px 20px;
+  text-align: center;
+  color: #aaa;
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 8px;
+}
+
+.lichsu-error {
+  color: #ff7777;
+}
+
+.lichsu-error button {
+  display: block;
+  margin: 18px auto 0;
+}
+
+.lichsu-empty-icon {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.lichsu-empty h3 {
+  color: #fff;
+  font-size: 19px;
+}
+
+.lichsu-empty p {
+  color: #999;
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 600px) {
+  .lichsu-container {
+    padding: 25px 12px 40px;
+  }
+
+  .lichsu-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lichsu-heading h2 {
+    font-size: 22px;
+  }
+
+  .lichsu-order-header,
+  .lichsu-order-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lichsu-total {
+    align-items: flex-start;
+  }
+
+  .lichsu-product {
+    gap: 10px;
+  }
+
+  .lichsu-product img {
+    width: 58px;
+    height: 58px;
+  }
+
+  .lichsu-product-info strong {
+    font-size: 12px;
+  }
+
+  .lichsu-product-price {
+    font-size: 12px;
+  }
+
+  .lichsu-actions {
+    justify-content: stretch;
+  }
+
+  .lichsu-cancel {
+    width: 100%;
+  }
+}
+.order-history-btn {
+  padding: 10px 13px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid #e10600;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.order-history-btn:hover {
+  background: #e10600;
+}
+
+/* =========================================
+   MH MOTO - HEADER REDESIGN
+========================================= */
+
+.navbar {
+  width: 100%;
+  min-height: 82px;
+  padding: 12px 3.5%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+
+  background: linear-gradient(90deg, #080808, #151515, #080808);
+  border-bottom: 2px solid #e10600;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.45);
+
+  position: relative;
+  z-index: 100;
+}
+
+/* LOGO */
+.navbar .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.navbar .logo img {
+  width: 74px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.navbar .logo h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 23px;
+  font-weight: 900;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.navbar .logo h2 span {
+  color: #e10600;
+}
+
+/* MENU */
+.navbar .nav-menu {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(10px, 1.5vw, 22px);
+  flex: 1;
+  min-width: 0;
+}
+
+.navbar .nav-menu > a {
+  color: #eee;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: 0.25s;
+  position: relative;
+}
+
+.navbar .nav-menu > a:hover {
+  color: #e10600;
+}
+
+.navbar .nav-menu > a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  width: 0;
+  height: 2px;
+  background: #e10600;
+  transition: 0.25s;
+}
+
+.navbar .nav-menu > a:hover::after {
+  width: 100%;
+}
+
+/* CART */
+.navbar .cart-btn {
+  min-width: 42px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background: #202020;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.2s;
+}
+
+.navbar .cart-btn:hover {
+  background: #e10600;
+  border-color: #e10600;
+}
+
+/* ORDER HISTORY */
+.navbar .order-history-btn {
+  min-width: max-content;
+  height: 38px;
+  padding: 0 13px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #e10600;
+  color: #fff;
+  border: 1px solid #e10600;
+  border-radius: 5px;
+
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.navbar .order-history-btn:hover {
+  background: #fff;
+  color: #e10600;
+  border-color: #fff;
+}
+
+/* LOGIN / REGISTER / USER */
+.navbar .auth-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.navbar .welcome-user {
+  color: #eee;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.navbar .welcome-user strong {
+  color: #e10600;
+}
+
+.navbar .login-btn,
+.navbar .register-btn,
+.navbar .logout-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.navbar .login-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #e10600;
+}
+
+.navbar .register-btn,
+.navbar .logout-btn {
+  background: #e10600;
+  color: #fff;
+  border: 1px solid #e10600;
+}
+
+.navbar .login-btn:hover,
+.navbar .register-btn:hover,
+.navbar .logout-btn:hover {
+  background: #fff;
+  color: #e10600;
+  border-color: #fff;
+}
+
+/* TABLET */
+@media (max-width: 1100px) {
+  .navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 18px;
+  }
+
+  .navbar .logo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .navbar .nav-menu {
+    width: 100%;
+    flex: none;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 12px 10px;
+  }
+
+  .navbar .logo img {
+    width: 62px;
+    height: 42px;
+  }
+
+  .navbar .logo h2 {
+    font-size: 20px;
+  }
+
+  .navbar .nav-menu {
+    gap: 12px;
+  }
+
+  .navbar .nav-menu > a {
+    font-size: 12px;
+  }
+
+  .navbar .auth-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navbar .welcome-user {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* =========================================
+   MH MOTO - HEADER 2 TẦNG
+========================================= */
+
+.navbar {
+  width: 100%;
+  min-height: unset;
+  padding: 15px 20px 0;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+
+  background: #080808;
+  border-bottom: 2px solid #e10600;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+
+  position: relative;
+  z-index: 100;
+}
+
+/* TẦNG 1: LOGO VÀ THƯƠNG HIỆU */
+.navbar > .logo {
+  width: 100%;
+  min-height: 65px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.navbar > .logo img {
+  width: 85px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.navbar > .logo h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.navbar > .logo h2 span {
+  color: #e10600;
+}
+
+/* TẦNG 2: MENU */
+.navbar > .nav-menu {
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 22px;
+
+  box-sizing: border-box;
+}
+
+/* Các mục menu */
+.navbar > .nav-menu > a {
+  color: #eee;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+
+.navbar > .nav-menu > a:hover {
+  color: #e10600;
+}
+
+/* Giỏ hàng */
+.navbar .cart-btn {
+  width: 42px;
+  height: 38px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background: #202020;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.navbar .cart-btn:hover {
+  background: #e10600;
+  border-color: #e10600;
+}
+
+/* Lịch sử đơn hàng */
+.navbar .order-history-btn {
+  min-height: 38px;
+  padding: 0 15px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #e10600;
+  color: #fff;
+  border: 1px solid #e10600;
+  border-radius: 5px;
+
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.navbar .order-history-btn:hover {
+  background: #fff;
+  color: #e10600;
+}
+
+/* Tài khoản */
+.navbar .auth-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.navbar .welcome-user {
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.navbar .welcome-user strong {
+  color: #e10600;
+}
+
+.navbar .login-btn,
+.navbar .register-btn,
+.navbar .logout-btn {
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.navbar .login-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #e10600;
+}
+
+.navbar .register-btn,
+.navbar .logout-btn {
+  background: #e10600;
+  color: #fff;
+  border: 1px solid #e10600;
+}
+
+/* Màn hình nhỏ */
+@media (max-width: 700px) {
+  .navbar {
+    padding: 12px 10px 0;
+  }
+
+  .navbar > .logo {
+    min-height: 55px;
+  }
+
+  .navbar > .logo img {
+    width: 68px;
+    height: 44px;
+  }
+
+  .navbar > .logo h2 {
+    font-size: 23px;
+  }
+
+  .navbar > .nav-menu {
+    gap: 12px;
+  }
+}
+
+/* FIX GẠCH CHÂN MENU BỊ LỆCH */
+.navbar .nav-menu > a::before,
+.navbar .nav-menu > a::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Đường viền đỏ dưới toàn bộ thanh menu */
+.navbar {
+  border-bottom: none !important;
+}
+
+.navbar > .nav-menu {
+  border-bottom: 2px solid #e10600;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Không để từng mục menu tự tạo đường đỏ */
+.navbar > .nav-menu > a {
+  position: static;
+  border-bottom: none !important;
+}
+
+.xac-nhan-thanh-toan-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #16803d;
+  color: #fff;
+  border: 1px solid #16803d;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.xac-nhan-thanh-toan-btn:hover {
+  background: #0f642e;
+  border-color: #0f642e;
+}

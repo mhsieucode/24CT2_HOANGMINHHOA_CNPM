@@ -4,6 +4,8 @@ const path = require("path");
 const fs = require("fs");
 
 const Product = require("../models/product");
+const Cart = require("../models/cart");
+const Order = require("../models/order");
 const { kiemTraQuanLy } = require("../middleware/auth");
 
 const router = express.Router();
@@ -145,7 +147,26 @@ const xuLyThongSo = (duLieu, danhMuc) => {
 };
 
 // ======================================
-// 7. LẤY THÔNG SỐ TỪ FRONTEND
+// 7. KIỂM TRA SỐ LƯỢNG TỒN KHO
+// CHỈ CHẤP NHẬN SỐ NGUYÊN KHÔNG ÂM
+// ======================================
+
+const soLuongHopLe = (value) => {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return false;
+  }
+
+  if (typeof value === "string" && !value.trim()) {
+    return false;
+  }
+
+  const soLuong = Number(value);
+
+  return Number.isSafeInteger(soLuong) && soLuong >= 0;
+};
+
+// ======================================
+// 8. LẤY THÔNG SỐ TỪ FRONTEND
 // ======================================
 
 const layThongSoTuRequest = (body) => {
@@ -161,7 +182,7 @@ const layThongSoTuRequest = (body) => {
 };
 
 // ======================================
-// 8. CẤU HÌNH UPLOAD ẢNH
+// 9. CẤU HÌNH UPLOAD ẢNH
 // ======================================
 
 const storage = multer.diskStorage({
@@ -194,7 +215,7 @@ const upload = multer({
 });
 
 // ======================================
-// 9. LẤY DANH SÁCH SẢN PHẨM
+// 10. LẤY DANH SÁCH SẢN PHẨM
 // ======================================
 
 router.get("/", async (req, res) => {
@@ -214,7 +235,7 @@ router.get("/", async (req, res) => {
 });
 
 // ======================================
-// 10. LẤY CHI TIẾT SẢN PHẨM
+// 11. LẤY CHI TIẾT SẢN PHẨM
 // ======================================
 
 router.get("/:id", async (req, res) => {
@@ -244,7 +265,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // ======================================
-// 11. THÊM SẢN PHẨM
+// 12. THÊM SẢN PHẨM
 // ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
@@ -273,16 +294,12 @@ router.post("/", kiemTraQuanLy, upload.single("hinhAnh"), async (req, res) => {
       });
     }
 
-    if (
-      soLuong !== undefined &&
-      (soLuong === "" ||
-        !Number.isFinite(Number(soLuong)) ||
-        Number(soLuong) < 0)
-    ) {
+    // KIỂM TRA SỐ LƯỢNG TỒN KHO
+    if (soLuong !== undefined && !soLuongHopLe(soLuong)) {
       xoaAnhUpload(req.file);
 
       return res.status(400).json({
-        message: "Số lượng sản phẩm không hợp lệ!",
+        message: "Số lượng phải là số nguyên không âm!",
       });
     }
 
@@ -303,7 +320,7 @@ router.post("/", kiemTraQuanLy, upload.single("hinhAnh"), async (req, res) => {
       tenSanPham: String(tenSanPham).trim(),
       gia: Number(gia),
       moTa: moTa || "",
-      soLuong: Number(soLuong || 0),
+      soLuong: Number(soLuong === undefined ? 0 : soLuong),
       danhMuc: danhMucMoi,
       hinhAnh: req.file ? `/uploads/${req.file.filename}` : "",
       thongSo: thongSoMoi,
@@ -335,7 +352,7 @@ router.post("/", kiemTraQuanLy, upload.single("hinhAnh"), async (req, res) => {
 });
 
 // ======================================
-// 12. CẬP NHẬT SẢN PHẨM
+// 13. CẬP NHẬT SẢN PHẨM
 // ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
@@ -389,16 +406,12 @@ router.put(
         });
       }
 
-      if (
-        soLuong !== undefined &&
-        (soLuong === "" ||
-          !Number.isFinite(Number(soLuong)) ||
-          Number(soLuong) < 0)
-      ) {
+      // KIỂM TRA SỐ LƯỢNG TỒN KHO
+      if (soLuong !== undefined && !soLuongHopLe(soLuong)) {
         xoaAnhUpload(req.file);
 
         return res.status(400).json({
-          message: "Số lượng sản phẩm không hợp lệ!",
+          message: "Số lượng phải là số nguyên không âm!",
         });
       }
 
@@ -490,19 +503,23 @@ router.put(
 );
 
 // ======================================
-// 13. XÓA SẢN PHẨM
+// 14. XÓA SẢN PHẨM AN TOÀN
 // ADMIN VÀ NHÂN VIÊN ĐƯỢC THỰC HIỆN
 // ======================================
 
 router.delete("/:id", kiemTraQuanLy, async (req, res) => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+    const productId = req.params.id;
+
+    // 1. KIỂM TRA ID
+    if (!/^[0-9a-fA-F]{24}$/.test(productId)) {
       return res.status(400).json({
         message: "ID sản phẩm không hợp lệ!",
       });
     }
 
-    const sanPham = await Product.findByIdAndDelete(req.params.id);
+    // 2. KIỂM TRA SẢN PHẨM CÓ TỒN TẠI
+    const sanPham = await Product.findById(productId);
 
     if (!sanPham) {
       return res.status(404).json({
@@ -510,8 +527,55 @@ router.delete("/:id", kiemTraQuanLy, async (req, res) => {
       });
     }
 
-    if (sanPham.hinhAnh && sanPham.hinhAnh.startsWith("/uploads/")) {
-      const tenAnh = path.basename(sanPham.hinhAnh);
+    // 3. KIỂM TRA SẢN PHẨM TRONG GIỎ HÀNG
+    console.log("========== KIỂM TRA GIỎ HÀNG ==========");
+    console.log("ID sản phẩm cần xóa:", productId);
+    console.log("Tên Model Cart:", Cart.modelName);
+    console.log("Collection Cart:", Cart.collection.name);
+
+    const soGioHangCoSanPham = await Cart.countDocuments({
+      "items.productId": productId,
+    });
+
+    console.log("Số giỏ hàng có sản phẩm này:", soGioHangCoSanPham);
+
+    const sanPhamTrongGio = await Cart.findOne({
+      "items.productId": productId,
+    }).select("_id");
+
+    console.log("Kết quả tìm thấy:", sanPhamTrongGio);
+    console.log("=======================================");
+    if (sanPhamTrongGio) {
+      return res.status(409).json({
+        message:
+          "Không thể xóa sản phẩm này vì đang có trong giỏ hàng của khách hàng!",
+      });
+    }
+
+    // 4. KIỂM TRA SẢN PHẨM TRONG LỊCH SỬ ĐƠN HÀNG
+    const sanPhamTrongDon = await Order.findOne({
+      "items.productId": productId,
+    }).select("_id");
+
+    if (sanPhamTrongDon) {
+      return res.status(409).json({
+        message:
+          "Không thể xóa sản phẩm này vì đã xuất hiện trong lịch sử đơn hàng!",
+      });
+    }
+
+    // 5. CHỈ XÓA SẢN PHẨM KHI ĐÃ QUA CÁC BƯỚC KIỂM TRA
+    const sanPhamDaXoa = await Product.findByIdAndDelete(productId);
+
+    if (!sanPhamDaXoa) {
+      return res.status(404).json({
+        message: "Sản phẩm không còn tồn tại hoặc đã được xóa!",
+      });
+    }
+
+    // 6. XÓA ẢNH SAU KHI XÓA SẢN PHẨM THÀNH CÔNG
+    if (sanPhamDaXoa.hinhAnh && sanPhamDaXoa.hinhAnh.startsWith("/uploads/")) {
+      const tenAnh = path.basename(sanPhamDaXoa.hinhAnh);
       const duongDanAnh = path.join(uploadDir, tenAnh);
 
       try {
@@ -523,8 +587,10 @@ router.delete("/:id", kiemTraQuanLy, async (req, res) => {
       }
     }
 
-    console.log("ĐÃ XÓA SẢN PHẨM:", sanPham.tenSanPham);
+    console.log("================================");
+    console.log("ĐÃ XÓA SẢN PHẨM:", sanPhamDaXoa.tenSanPham);
     console.log("NGƯỜI THỰC HIỆN:", req.user?.role);
+    console.log("================================");
 
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
@@ -539,7 +605,7 @@ router.delete("/:id", kiemTraQuanLy, async (req, res) => {
 });
 
 // ======================================
-// 14. XỬ LÝ LỖI UPLOAD
+// 15. XỬ LÝ LỖI UPLOAD
 // ======================================
 
 router.use((error, req, res, next) => {
@@ -553,7 +619,7 @@ router.use((error, req, res, next) => {
 });
 
 // ======================================
-// 15. XUẤT ROUTER
+// 16. XUẤT ROUTER
 // ======================================
 
 module.exports = router;

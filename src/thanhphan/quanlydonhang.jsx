@@ -21,6 +21,17 @@ function QuanLyDonHang({ dong }) {
   const [dangCapNhat, setDangCapNhat] = useState("");
   const [loi, setLoi] = useState("");
 
+  // LẤY QUYỀN TÀI KHOẢN ĐĂNG NHẬP
+  const thongTinDangNhap = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const laAdmin = thongTinDangNhap?.role === "admin";
+
   // ======================================
   // 3. ĐỌC JSON AN TOÀN
   // ======================================
@@ -102,7 +113,6 @@ function QuanLyDonHang({ dong }) {
 
   // ======================================
   // 7. LẤY DANH SÁCH ĐƠN HÀNG
-  // JWT COOKIE
   // ======================================
 
   const layDonHang = useCallback(async () => {
@@ -114,17 +124,13 @@ function QuanLyDonHang({ dong }) {
         fetch(`${API}/api/products`, {
           method: "GET",
           credentials: "include",
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json" },
         }),
 
         fetch(`${API}/api/admin/orders`, {
           method: "GET",
           credentials: "include",
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json" },
         }),
       ]);
 
@@ -167,7 +173,6 @@ function QuanLyDonHang({ dong }) {
       setDonHang(danhSachDonHang);
     } catch (error) {
       console.error("LỖI LẤY ĐƠN HÀNG:", error);
-
       setLoi(error.message || "Không thể kết nối đến server!");
     } finally {
       setDangTai(false);
@@ -235,11 +240,18 @@ function QuanLyDonHang({ dong }) {
 
   // ======================================
   // 11. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
-  // JWT COOKIE
   // ======================================
 
   const capNhatTrangThai = async (id, trangThaiMoi) => {
     if (!id || dangCapNhat) return;
+
+    if (
+      trangThaiMoi === "Đã hủy" &&
+      !window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")
+    ) {
+      await layDonHang();
+      return;
+    }
 
     try {
       setDangCapNhat(id);
@@ -260,36 +272,16 @@ function QuanLyDonHang({ dong }) {
       const data = await docJSON(response);
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error(
-            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!"
-          );
-        }
-
-        if (response.status === 403) {
-          throw new Error("Tài khoản không có quyền cập nhật đơn hàng!");
-        }
-
         throw new Error(
           data.message || "Cập nhật trạng thái đơn hàng thất bại!"
         );
       }
 
-      setDonHang((danhSachCu) =>
-        danhSachCu.map((don) =>
-          String(don._id) === String(id)
-            ? {
-                ...don,
-                trangThaiDonHang: data.order?.trangThaiDonHang || trangThaiMoi,
-              }
-            : don
-        )
-      );
+      alert(data.message || "Cập nhật trạng thái thành công!");
 
-      alert("Cập nhật trạng thái thành công!");
+      await layDonHang();
     } catch (error) {
       console.error("LỖI CẬP NHẬT TRẠNG THÁI:", error);
-
       alert(error.message || "Không thể kết nối đến server!");
     } finally {
       setDangCapNhat("");
@@ -297,7 +289,106 @@ function QuanLyDonHang({ dong }) {
   };
 
   // ======================================
-  // 12. THỐNG KÊ ĐƠN HÀNG
+  // 12. XÁC NHẬN ĐÃ NHẬN TIỀN CHUYỂN KHOẢN
+  // ======================================
+
+  const xacNhanThanhToan = async (id) => {
+    const dongY = window.confirm(
+      "Bạn đã kiểm tra tài khoản ngân hàng và xác nhận đã nhận tiền?"
+    );
+
+    if (!dongY) return;
+
+    try {
+      setDangCapNhat(id);
+
+      const response = await fetch(
+        `${API}/api/admin/orders/${id}/confirm-payment`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        }
+      );
+
+      const data = await docJSON(response);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Xác nhận thanh toán thất bại!");
+      }
+
+      alert(data.message || "Xác nhận thanh toán thành công!");
+
+      await layDonHang();
+    } catch (error) {
+      console.error("LỖI XÁC NHẬN THANH TOÁN:", error);
+      alert(error.message || "Không thể kết nối đến server!");
+    } finally {
+      setDangCapNhat("");
+    }
+  };
+
+  // ======================================
+  // 13. ADMIN XÁC NHẬN ĐÃ HOÀN TIỀN
+  // ======================================
+
+  const xacNhanHoanTien = async (id) => {
+    if (!laAdmin) {
+      alert("Chỉ Admin mới có quyền xác nhận hoàn tiền!");
+      return;
+    }
+
+    const dongY = window.confirm(
+      "Bạn đã thực sự chuyển khoản hoàn tiền cho khách hàng?\n\n" +
+        "Chỉ xác nhận sau khi đã chuyển tiền thành công."
+    );
+
+    if (!dongY) return;
+
+    const ghiChu = window.prompt(
+      "Nhập ghi chú hoàn tiền (có thể để trống):",
+      "Đã chuyển khoản hoàn tiền cho khách hàng"
+    );
+
+    if (ghiChu === null) return;
+
+    try {
+      setDangCapNhat(id);
+
+      const response = await fetch(
+        `${API}/api/admin/orders/${id}/confirm-refund`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            ghiChuHoanTien: ghiChu,
+          }),
+        }
+      );
+
+      const data = await docJSON(response);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Xác nhận hoàn tiền thất bại!");
+      }
+
+      alert(data.message || "Xác nhận hoàn tiền thành công!");
+
+      await layDonHang();
+    } catch (error) {
+      console.error("LỖI XÁC NHẬN HOÀN TIỀN:", error);
+      alert(error.message || "Không thể kết nối đến server!");
+    } finally {
+      setDangCapNhat("");
+    }
+  };
+
+  // ======================================
+  // 14. THỐNG KÊ ĐƠN HÀNG
   // ======================================
 
   const tongDonHang = donHang.length;
@@ -318,8 +409,12 @@ function QuanLyDonHang({ dong }) {
     (don) => don.trangThaiDonHang === "Đã hoàn thành"
   ).length;
 
+  const donChoHoanTien = donHang.filter(
+    (don) => don.trangThaiHoanTien === "Chờ xử lý"
+  ).length;
+
   // ======================================
-  // 13. GIAO DIỆN ĐANG TẢI
+  // 15. GIAO DIỆN ĐANG TẢI
   // ======================================
 
   if (dangTai) {
@@ -347,7 +442,7 @@ function QuanLyDonHang({ dong }) {
   }
 
   // ======================================
-  // 14. GIAO DIỆN QUẢN LÝ ĐƠN HÀNG
+  // 16. GIAO DIỆN QUẢN LÝ ĐƠN HÀNG
   // ======================================
 
   return (
@@ -370,7 +465,7 @@ function QuanLyDonHang({ dong }) {
           <button
             type="button"
             onClick={layDonHang}
-            disabled={dangTai || dangCapNhat !== ""}
+            disabled={dangCapNhat !== ""}
           >
             ↻ Làm mới
           </button>
@@ -416,6 +511,11 @@ function QuanLyDonHang({ dong }) {
           <span>Đã hoàn thành</span>
           <strong>{donHoanThanh}</strong>
         </div>
+
+        <div className="donhang-thong-ke-item">
+          <span>Chờ hoàn tiền</span>
+          <strong style={{ color: "#d97706" }}>{donChoHoanTien}</strong>
+        </div>
       </div>
 
       {/* DANH SÁCH ĐƠN HÀNG */}
@@ -423,7 +523,6 @@ function QuanLyDonHang({ dong }) {
       {donHang.length === 0 ? (
         <div className="donhang-trong">
           <span>📦</span>
-
           <p>
             {loi
               ? "Không thể tải danh sách đơn hàng."
@@ -482,10 +581,8 @@ function QuanLyDonHang({ dong }) {
                                     alt={sanPham.tenSanPham}
                                     onError={(e) => {
                                       e.currentTarget.style.display = "none";
-
                                       const fallback =
                                         e.currentTarget.nextElementSibling;
-
                                       if (fallback) {
                                         fallback.style.display = "flex";
                                       }
@@ -535,7 +632,7 @@ function QuanLyDonHang({ dong }) {
                   )}
                 </div>
 
-                {/* CỘT PHẢI: THÔNG TIN KHÁCH HÀNG */}
+                {/* CỘT PHẢI: KHÁCH HÀNG */}
 
                 <div className="donhang-cot-thong-tin">
                   <h4>THÔNG TIN KHÁCH HÀNG</h4>
@@ -558,7 +655,6 @@ function QuanLyDonHang({ dong }) {
 
                     <div>
                       <span>Phương thức thanh toán</span>
-
                       <strong>
                         {don.phuongThucThanhToan === "COD"
                           ? "Thanh toán khi nhận hàng"
@@ -566,15 +662,154 @@ function QuanLyDonHang({ dong }) {
                       </strong>
                     </div>
 
-                    {don.trangThaiThanhToan && (
-                      <div>
-                        <span>Trạng thái thanh toán</span>
-                        <strong>{don.trangThaiThanhToan}</strong>
-                      </div>
-                    )}
+                    <div>
+                      <span>Trạng thái thanh toán</span>
+                      <strong>
+                        {don.trangThaiThanhToan || "Chưa thanh toán"}
+                      </strong>
+                    </div>
+
+                    {/* XÁC NHẬN NHẬN TIỀN */}
+
+                    {don.phuongThucThanhToan === "BANK_TRANSFER" &&
+                      don.trangThaiThanhToan !== "Đã thanh toán" &&
+                      don.trangThaiThanhToan !== "Đã hoàn tiền" &&
+                      don.trangThaiDonHang !== "Đã hủy" && (
+                        <button
+                          type="button"
+                          className="xac-nhan-thanh-toan-btn"
+                          disabled={dangCapNhat !== ""}
+                          onClick={() => xacNhanThanhToan(don._id)}
+                        >
+                          ✓ XÁC NHẬN ĐÃ NHẬN TIỀN
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
+
+              {/* ======================================
+                  KHU VỰC QUẢN LÝ HOÀN TIỀN
+              ====================================== */}
+
+              {don.trangThaiHoanTien &&
+                don.trangThaiHoanTien !== "Không yêu cầu" && (
+                  <div
+                    className="donhang-hoan-tien"
+                    style={{
+                      marginTop: "20px",
+                      padding: "18px",
+                      borderRadius: "10px",
+                      border: "1px solid #e5a000",
+                      background: "#fffaf0",
+                      color: "#222",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 14px",
+                        color: "#9a6700",
+                        fontSize: "16px",
+                      }}
+                    >
+                      💰 QUẢN LÝ HOÀN TIỀN
+                    </h4>
+
+                    <div style={{ marginBottom: "10px" }}>
+                      <span>Trạng thái hoàn tiền: </span>
+
+                      <strong
+                        style={{
+                          color:
+                            don.trangThaiHoanTien === "Đã hoàn tiền"
+                              ? "#16803d"
+                              : don.trangThaiHoanTien === "Chờ xử lý"
+                              ? "#d97706"
+                              : "#b42318",
+                        }}
+                      >
+                        {don.trangThaiHoanTien}
+                      </strong>
+                    </div>
+
+                    <div style={{ marginBottom: "10px" }}>
+                      <span>Số tiền cần hoàn: </span>
+                      <strong>{dinhDangTien(don.tongTien)}</strong>
+                    </div>
+
+                    {don.ngayHoanTien && (
+                      <div style={{ marginBottom: "10px" }}>
+                        <span>Ngày hoàn tiền: </span>
+                        <strong>
+                          {new Date(don.ngayHoanTien).toLocaleString("vi-VN")}
+                        </strong>
+                      </div>
+                    )}
+
+                    {don.ghiChuHoanTien && (
+                      <div style={{ marginBottom: "10px" }}>
+                        <span>Ghi chú: </span>
+                        <strong>{don.ghiChuHoanTien}</strong>
+                      </div>
+                    )}
+
+                    {don.trangThaiHoanTien === "Chờ xử lý" && (
+                      <>
+                        <p
+                          style={{
+                            margin: "12px 0",
+                            color: "#8a5b00",
+                            fontSize: "13px",
+                          }}
+                        >
+                          Đơn hàng đã thanh toán và bị hủy. Vui lòng chuyển
+                          khoản hoàn tiền cho khách trước khi xác nhận hoàn tiền
+                          trên hệ thống.
+                        </p>
+
+                        {laAdmin ? (
+                          <button
+                            type="button"
+                            disabled={dangCapNhat !== ""}
+                            onClick={() => xacNhanHoanTien(don._id)}
+                            style={{
+                              width: "100%",
+                              padding: "13px",
+                              background: "#16803d",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "7px",
+                              fontWeight: "800",
+                              cursor:
+                                dangCapNhat !== "" ? "not-allowed" : "pointer",
+                              opacity: dangCapNhat !== "" ? 0.6 : 1,
+                            }}
+                          >
+                            {dangCapNhat === don._id
+                              ? "ĐANG XỬ LÝ..."
+                              : "✓ XÁC NHẬN ĐÃ HOÀN TIỀN"}
+                          </button>
+                        ) : (
+                          <p style={{ color: "#9a6700", fontWeight: "600" }}>
+                            Chỉ Admin mới có quyền xác nhận hoàn tiền.
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    {don.trangThaiHoanTien === "Đã hoàn tiền" && (
+                      <p
+                        style={{
+                          color: "#16803d",
+                          fontWeight: "800",
+                          margin: "12px 0 0",
+                        }}
+                      >
+                        ✓ ĐÃ HOÀN TIỀN CHO KHÁCH HÀNG
+                      </p>
+                    )}
+                  </div>
+                )}
 
               {/* TRẠNG THÁI ĐƠN HÀNG */}
 

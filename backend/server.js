@@ -836,6 +836,129 @@ app.get("/api/orders", kiemTraTaiKhoan, async (req, res) => {
 });
 
 // ======================================
+// KHÁCH HÀNG - HỦY ĐƠN HÀNG
+// CHỈ HỦY ĐƠN ĐANG CHỜ XÁC NHẬN
+// ======================================
+app.put("/api/orders/:id/cancel", kiemTraTaiKhoan, async (req, res) => {
+  let session = null;
+
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID đơn hàng không hợp lệ!",
+      });
+    }
+
+    session = await mongoose.startSession();
+
+    let orderUpdated = null;
+    let daHoanKhoTrongLanNay = false;
+
+    await session.withTransaction(async () => {
+      // Chỉ tìm đơn hàng thuộc tài khoản đang đăng nhập
+      const order = await Order.findOne({
+        _id: id,
+        userId: req.user._id,
+      }).session(session);
+
+      if (!order) {
+        throw Object.assign(
+          new Error("Không tìm thấy đơn hàng hoặc bạn không có quyền hủy!"),
+          { statusCode: 404 }
+        );
+      }
+      // KHÔNG CHO KHÁCH HỦY ĐƠN ĐÃ THANH TOÁN
+
+      // KHÔNG CHO KHÁCH HỦY ĐƠN ĐÃ THANH TOÁN
+      if (
+        order.trangThaiThanhToan === "Đã thanh toán" ||
+        order.trangThaiThanhToan === "Đã hoàn tiền"
+      ) {
+        throw Object.assign(
+          new Error(
+            "Đơn hàng đã thanh toán hoặc đã hoàn tiền, không thể tự hủy. Vui lòng liên hệ Admin để được hỗ trợ!"
+          ),
+          { statusCode: 400 }
+        );
+      }
+
+      // Chỉ cho phép hủy đơn đang chờ xác nhận
+      if (order.trangThaiDonHang !== "Chờ xác nhận") {
+        throw Object.assign(
+          new Error("Chỉ có thể hủy đơn hàng đang chờ xác nhận!"),
+          { statusCode: 400 }
+        );
+      }
+
+      // Hoàn kho nếu đơn đã trừ kho và chưa hoàn kho
+      if (order.daTruKho === true && order.daHoanKho !== true) {
+        for (const item of order.items || []) {
+          const productId = item.productId;
+          const soLuong = Number(item.soLuong);
+
+          if (
+            !productId ||
+            !mongoose.isValidObjectId(String(productId)) ||
+            !Number.isInteger(soLuong) ||
+            soLuong < 1
+          ) {
+            throw Object.assign(
+              new Error("Thông tin sản phẩm trong đơn hàng không hợp lệ!"),
+              { statusCode: 400 }
+            );
+          }
+
+          const ketQuaHoanKho = await Product.updateOne(
+            { _id: productId },
+            { $inc: { soLuong: soLuong } },
+            { session }
+          );
+
+          if (ketQuaHoanKho.modifiedCount !== 1) {
+            throw Object.assign(
+              new Error("Không thể hoàn lại tồn kho sản phẩm!"),
+              { statusCode: 404 }
+            );
+          }
+        }
+
+        order.daHoanKho = true;
+        daHoanKhoTrongLanNay = true;
+      }
+
+      // Cập nhật trạng thái đơn hàng
+      order.trangThaiDonHang = "Đã hủy";
+
+      await order.save({ session });
+
+      orderUpdated = order;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: daHoanKhoTrongLanNay
+        ? "Hủy đơn thành công! Tồn kho đã được hoàn lại."
+        : "Hủy đơn hàng thành công!",
+      order: orderUpdated,
+    });
+  } catch (error) {
+    console.error("LỖI KHÁCH HÀNG HỦY ĐƠN:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Không thể hủy đơn hàng!",
+    });
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+  }
+});
+
+// ======================================
 // 20. ADMIN - DANH SÁCH TÀI KHOẢN
 // ======================================
 app.get("/api/admin/users", kiemTraAdmin, async (req, res) => {
@@ -978,6 +1101,12 @@ app.get("/api/admin/orders", kiemTraQuanLy, async (req, res) => {
 // 24. QUẢN LÝ - CẬP NHẬT TRẠNG THÁI ĐƠN
 // ADMIN + NHÂN VIÊN
 // ======================================
+
+// ======================================
+// 24. QUẢN LÝ - CẬP NHẬT TRẠNG THÁI ĐƠN
+// ADMIN + NHÂN VIÊN
+// ======================================
+
 app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
   let session = null;
 
@@ -1011,6 +1140,7 @@ app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
 
     let orderUpdated = null;
     let daHoanKhoTrongLanNay = false;
+    let taoYeuCauHoanTien = false;
 
     await session.withTransaction(async () => {
       const order = await Order.findById(id).session(session);
@@ -1032,6 +1162,32 @@ app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
         );
       }
 
+      // KHÔNG CHO HỦY ĐƠN ĐÃ GIAO HOÀN THÀNH
+      if (
+        trangThaiDonHang === "Đã hủy" &&
+        order.trangThaiDonHang === "Đã hoàn thành"
+      ) {
+        throw Object.assign(
+          new Error(
+            "Đơn hàng đã hoàn thành. Không thể hủy trực tiếp, vui lòng xử lý theo quy trình đổi trả!"
+          ),
+          { statusCode: 400 }
+        );
+      }
+
+      // KHÔNG CHO HỦY ĐƠN ĐANG GIAO
+      if (
+        trangThaiDonHang === "Đã hủy" &&
+        order.trangThaiDonHang === "Đang giao hàng"
+      ) {
+        throw Object.assign(
+          new Error(
+            "Đơn hàng đang giao. Vui lòng xử lý việc giao hàng trước khi hủy!"
+          ),
+          { statusCode: 400 }
+        );
+      }
+
       // CHỈ HOÀN KHO KHI HỦY ĐƠN LẦN ĐẦU
       if (
         trangThaiDonHang === "Đã hủy" &&
@@ -1043,63 +1199,92 @@ app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
           const productId = item.productId;
           const soLuong = Number(item.soLuong);
 
-          if (!productId || !mongoose.isValidObjectId(String(productId))) {
+          if (
+            !productId ||
+            !mongoose.isValidObjectId(String(productId)) ||
+            !Number.isInteger(soLuong) ||
+            soLuong < 1
+          ) {
             throw Object.assign(
-              new Error(
-                `Không thể hoàn kho: sản phẩm trong đơn ${order._id} thiếu ID hợp lệ!`
-              ),
+              new Error("Thông tin sản phẩm trong đơn hàng không hợp lệ!"),
               { statusCode: 400 }
             );
           }
 
-          if (!Number.isInteger(soLuong) || soLuong < 1) {
-            throw Object.assign(
-              new Error(
-                "Không thể hoàn kho: số lượng sản phẩm trong đơn không hợp lệ!"
-              ),
-              { statusCode: 400 }
-            );
-          }
+          const ketQuaHoanKho = await Product.updateOne(
+            { _id: productId },
+            { $inc: { soLuong: soLuong } },
+            { session }
+          );
 
-          const product = await Product.findById(productId).session(session);
-
-          if (!product) {
+          if (ketQuaHoanKho.modifiedCount !== 1) {
             throw Object.assign(
-              new Error(`Không tìm thấy sản phẩm ${productId} để hoàn kho!`),
+              new Error("Không tìm thấy sản phẩm để hoàn kho!"),
               { statusCode: 404 }
             );
           }
-
-          // CỘNG LẠI TỒN KHO
-          await Product.updateOne(
-            {
-              _id: productId,
-            },
-            {
-              $inc: {
-                soLuong: soLuong,
-              },
-            },
-            { session }
-          );
         }
 
         order.daHoanKho = true;
         daHoanKhoTrongLanNay = true;
       }
 
+      // ======================================
+      // XỬ LÝ YÊU CẦU HOÀN TIỀN
+      // ======================================
+
+      if (
+        trangThaiDonHang === "Đã hủy" &&
+        order.trangThaiDonHang !== "Đã hủy"
+      ) {
+        if (order.trangThaiThanhToan === "Đã thanh toán") {
+          // ĐÃ THANH TOÁN: CHỜ ADMIN XỬ LÝ HOÀN TIỀN
+          order.trangThaiHoanTien = "Chờ xử lý";
+          order.ngayHoanTien = null;
+          order.ghiChuHoanTien = "";
+          taoYeuCauHoanTien = true;
+        } else {
+          // CHƯA THANH TOÁN: KHÔNG CẦN HOÀN TIỀN
+          order.trangThaiHoanTien = "Không yêu cầu";
+          order.ngayHoanTien = null;
+          order.ghiChuHoanTien = "";
+        }
+      }
+
+      // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
       order.trangThaiDonHang = trangThaiDonHang;
+
+      // COD: CHỈ ĐÁNH DẤU ĐÃ THANH TOÁN KHI HOÀN THÀNH
+      if (
+        trangThaiDonHang === "Đã hoàn thành" &&
+        order.phuongThucThanhToan === "COD"
+      ) {
+        order.trangThaiThanhToan = "Đã thanh toán";
+      }
 
       await order.save({ session });
 
       orderUpdated = order;
     });
 
+    let message = "Cập nhật trạng thái đơn hàng thành công!";
+
+    if (trangThaiDonHang === "Đã hủy") {
+      if (taoYeuCauHoanTien) {
+        message =
+          "Đã hủy đơn hàng và tạo yêu cầu hoàn tiền. Admin cần xử lý hoàn tiền cho khách hàng.";
+      } else {
+        message = "Hủy đơn hàng thành công!";
+      }
+
+      if (daHoanKhoTrongLanNay) {
+        message += " Tồn kho đã được hoàn lại.";
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      message: daHoanKhoTrongLanNay
-        ? "Hủy đơn hàng thành công! Tồn kho đã được hoàn lại."
-        : "Cập nhật trạng thái đơn hàng thành công!",
+      message,
       order: orderUpdated,
     });
   } catch (error) {
@@ -1115,6 +1300,158 @@ app.put("/api/admin/orders/:id/status", kiemTraQuanLy, async (req, res) => {
     }
   }
 });
+
+// ======================================
+// ADMIN - XÁC NHẬN ĐÃ NHẬN TIỀN CHUYỂN KHOẢN
+// ======================================
+
+app.put(
+  "/api/admin/orders/:id/confirm-payment",
+  kiemTraAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "ID đơn hàng không hợp lệ!",
+        });
+      }
+
+      const order = await Order.findById(id);
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy đơn hàng!",
+        });
+      }
+
+      // Chỉ xác nhận thanh toán chuyển khoản
+      if (order.phuongThucThanhToan !== "BANK_TRANSFER") {
+        return res.status(400).json({
+          success: false,
+          message: "Đơn hàng không sử dụng chuyển khoản ngân hàng!",
+        });
+      }
+
+      // Không xác nhận thanh toán cho đơn đã hủy
+      if (order.trangThaiDonHang === "Đã hủy") {
+        return res.status(400).json({
+          success: false,
+          message: "Không thể xác nhận thanh toán cho đơn đã hủy!",
+        });
+      }
+
+      // Không xác nhận lại đơn đã thanh toán
+      if (order.trangThaiThanhToan === "Đã thanh toán") {
+        return res.status(400).json({
+          success: false,
+          message: "Đơn hàng này đã được xác nhận thanh toán!",
+        });
+      }
+
+      // XÁC NHẬN ĐÃ NHẬN TIỀN
+      order.trangThaiThanhToan = "Đã thanh toán";
+
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Xác nhận đã nhận tiền chuyển khoản thành công!",
+        order,
+      });
+    } catch (error) {
+      console.error("LỖI XÁC NHẬN THANH TOÁN:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Không thể xác nhận thanh toán!",
+      });
+    }
+  }
+);
+
+// ======================================
+// ADMIN - XÁC NHẬN ĐÃ HOÀN TIỀN CHO KHÁCH
+// ======================================
+
+app.put(
+  "/api/admin/orders/:id/confirm-refund",
+  kiemTraAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { ghiChuHoanTien } = req.body;
+
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "ID đơn hàng không hợp lệ!",
+        });
+      }
+
+      const order = await Order.findById(id);
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy đơn hàng!",
+        });
+      }
+
+      // CHỈ XỬ LÝ ĐƠN ĐÃ HỦY
+      if (order.trangThaiDonHang !== "Đã hủy") {
+        return res.status(400).json({
+          success: false,
+          message: "Chỉ hoàn tiền cho đơn hàng đã hủy!",
+        });
+      }
+
+      // ĐƠN PHẢI ĐÃ THANH TOÁN
+      if (order.trangThaiThanhToan !== "Đã thanh toán") {
+        return res.status(400).json({
+          success: false,
+          message: "Đơn hàng chưa được thanh toán, không cần hoàn tiền!",
+        });
+      }
+
+      // PHẢI CÓ YÊU CẦU HOÀN TIỀN
+      if (order.trangThaiHoanTien !== "Chờ xử lý") {
+        return res.status(400).json({
+          success: false,
+          message: "Đơn hàng không ở trạng thái chờ xử lý hoàn tiền!",
+        });
+      }
+
+      // CẬP NHẬT HOÀN TIỀN
+      order.trangThaiHoanTien = "Đã hoàn tiền";
+      order.trangThaiThanhToan = "Đã hoàn tiền";
+      order.ngayHoanTien = new Date();
+
+      order.ghiChuHoanTien =
+        typeof ghiChuHoanTien === "string"
+          ? ghiChuHoanTien.trim().slice(0, 500)
+          : "";
+
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Đã xác nhận hoàn tiền thành công!",
+        order,
+      });
+    } catch (error) {
+      console.error("LỖI XÁC NHẬN HOÀN TIỀN:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Không thể xác nhận hoàn tiền!",
+      });
+    }
+  }
+);
 
 // ======================================
 // 25. ADMIN - THỐNG KÊ WEBSITE
